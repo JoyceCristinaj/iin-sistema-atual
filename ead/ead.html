@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IIN • EAD</title>
+
+  <style>
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f1013;
+      color:#f2f2f2;
+    }
+
+    .wrap{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .topbar{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg,#0f0f12,#3a0f14,#8b1421);
+      border:1px solid rgba(255,255,255,.10);
+      margin-bottom: 12px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
+    .brand .logo{
+      width:42px; height:42px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:14px;
+    }
+    .brand .meta{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width: 220px;
+    }
+    .brand .meta small{
+      opacity:.82;
+      font-weight:700;
+    }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .control{
+      height:40px;
+      padding:0 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      color:#f2f2f2;
+      outline:none;
+      font-weight:700;
+      min-width:180px;
+    }
+    .control::placeholder{ color: rgba(255,255,255,.55); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap: 12px;
+    }
+
+    .panel{
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+    }
+
+    .panel-head{
+      padding: 12px 12px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .badge{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      font-weight:900;
+      font-size:12px;
+    }
+
+    .list{
+      padding: 10px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height: calc(100vh - 190px);
+      overflow:auto;
+    }
+
+    .card{
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      padding: 10px;
+      cursor:pointer;
+      display:flex;
+      gap:10px;
+      transition: transform .05s ease;
+    }
+    .card:hover{ transform: translateY(-1px); }
+    .thumb{
+      width: 110px;
+      height: 70px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.25);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      flex: 0 0 auto;
+      font-size:12px;
+      font-weight:900;
+      opacity:.9;
+    }
+    .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .card strong{ display:block; margin-bottom:4px; }
+    .muted{ opacity:.78; font-size:12px; line-height:1.3; }
+
+    .playerWrap{
+      padding: 10px;
+    }
+    .player{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      overflow:hidden;
+    }
+    .player iframe{
+      width:100%;
+      height: 520px;
+      border:0;
+      display:block;
+      background:#000;
+    }
+    .playerMeta{
+      padding: 10px 12px;
+      border-top:1px solid rgba(255,255,255,.08);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .empty{
+      padding: 14px;
+      opacity:.82;
+      font-weight:700;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .list{ max-height: none; }
+      .player iframe{ height: 420px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">IIN</div>
+        <div class="meta">
+          <div id="projectLine">EAD</div>
+          <small id="subLine">Plataforma de aulas</small>
+        </div>
+      </div>
+
+      <!-- ✅ FILTROS DENTRO DO EAD -->
+      <div class="controls">
+        <input id="aulasSearch" class="control" type="text" placeholder="Buscar aula..." autocomplete="off" />
+
+        <select id="aulasCategory" class="control">
+          <option value="">Todas as categorias</option>
+        </select>
+
+        <select id="aulasLevel" class="control">
+          <option value="">Todos os níveis</option>
+          <option value="Iniciante">Iniciante</option>
+          <option value="Intermediário">Intermediário</option>
+          <option value="Avançado">Avançado</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <section class="panel">
+        <div class="panel-head">
+          <div><b>Aulas</b></div>
+          <div class="badge" id="countBadge">0 aulas</div>
+        </div>
+        <div class="list" id="list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div><b>Player</b></div>
+          <div class="badge" id="metaBadge">—</div>
+        </div>
+
+        <div class="playerWrap">
+          <div class="player" id="playerBox">
+            <div class="empty">Selecione uma aula para assistir.</div>
+          </div>
+          <div class="playerMeta" id="playerMeta" style="display:none"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    // ====== INTEGRAÇÃO com seu sistema (localStorage do app.js) ======
+    const STORAGE_KEY = "iin-system-v9_2";
+    const SESSION_KEY = "iin-session-v9_2";
+
+    function safeLower(s){ return String(s || "").toLowerCase(); }
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function loadSystemState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      }catch(e){
+        return null;
+      }
+    }
+
+    function loadSession(){
+      try{
+        const raw = localStorage.getItem(SESSION_KEY);
+        return raw ? JSON.parse(raw) : {};
+      }catch(e){
+        return {};
+      }
+    }
+
+    function getCurrentProjectKey(){
+      const ses = loadSession();
+      return ses?.currentProjectKey || "light";
+    }
+
+    function getLessons(){
+      const st = loadSystemState();
+      const projectKey = getCurrentProjectKey();
+
+      const bag = st?.lessonsByProject || {};
+      const list = Array.isArray(bag[projectKey]) ? bag[projectKey] : [];
+
+      // garante campos básicos
+      return list.map(x => ({
+        id: x.id,
+        title: x.title || "Sem título",
+        category: x.category || "",
+        level: x.level || "",
+        provider: x.provider || "",
+        embedUrl: x.embedUrl || "",
+        thumb: x.thumb || "",
+        desc: x.desc || "",
+        createdAt: x.createdAt || "",
+        project: x.project || projectKey
+      }));
+    }
+
+    // ====== UI ======
+    const ui = {
+      projectLine: document.getElementById("projectLine"),
+      subLine: document.getElementById("subLine"),
+      aulasSearch: document.getElementById("aulasSearch"),
+      aulasCategory: document.getElementById("aulasCategory"),
+      aulasLevel: document.getElementById("aulasLevel"),
+      list: document.getElementById("list"),
+      countBadge: document.getElementById("countBadge"),
+      playerBox: document.getElementById("playerBox"),
+      metaBadge: document.getElementById("metaBadge"),
+      playerMeta: document.getElementById("playerMeta"),
+    };
+
+    let LESSONS = [];
+    let selectedId = null;
+
+    function hydrateCategoryOptions(lessons){
+      const current = ui.aulasCategory.value || "";
+      const cats = Array.from(new Set(lessons.map(x => x.category).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+
+      ui.aulasCategory.innerHTML = '<option value="">Todas as categorias</option>' +
+        cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+
+      // tenta manter seleção
+      const has = [...ui.aulasCategory.options].some(o => o.value === current);
+      ui.aulasCategory.value = has ? current : "";
+    }
+
+    function renderList(){
+      const q = safeLower(ui.aulasSearch.value);
+      const cat = ui.aulasCategory.value || "";
+      const lvl = ui.aulasLevel.value || "";
+
+      const filtered = LESSONS.filter(a => {
+        const okQ = !q || safeLower(a.title).includes(q) || safeLower(a.desc).includes(q);
+        const okC = !cat || a.category === cat;
+        const okL = !lvl || a.level === lvl;
+        return okQ && okC && okL;
+      });
+
+      ui.countBadge.textContent = `${filtered.length} aulas`;
+      ui.list.innerHTML = "";
+
+      if(!filtered.length){
+        ui.list.innerHTML = `<div class="empty">Nenhuma aula encontrada para esse filtro.</div>`;
+        return;
+      }
+
+      filtered.forEach(a => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="thumb">
+            ${a.thumb ? `<img src="${escapeHtml(a.thumb)}" alt="thumb">` : escapeHtml((a.provider || "AULA").toUpperCase())}
+          </div>
+          <div style="min-width:0">
+            <strong>${escapeHtml(a.title)}</strong>
+            <div class="muted">${escapeHtml(a.category || "-")} • ${escapeHtml(a.level || "-")}</div>
+            ${a.desc ? `<div class="muted" style="margin-top:6px">${escapeHtml(a.desc)}</div>` : ""}
+          </div>
+        `;
+        card.addEventListener("click", () => openLesson(a.id));
+        ui.list.appendChild(card);
+      });
+    }
+
+    function openLesson(id){
+      const a = LESSONS.find(x => x.id === id);
+      if(!a) return;
+      selectedId = id;
+
+      ui.playerBox.innerHTML = `
+        <iframe
+          src="${escapeHtml(a.embedUrl)}"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      `;
+
+      ui.metaBadge.textContent = `${a.category || "-"} • ${a.level || "-"}`;
+
+      ui.playerMeta.style.display = "";
+      ui.playerMeta.innerHTML = `
+        <div>
+          <b>${escapeHtml(a.title)}</b><br/>
+          <span class="muted">${escapeHtml(a.desc || "")}</span>
+        </div>
+        <div class="badge">${escapeHtml(a.provider || "")}</div>
+      `;
+    }
+
+    function init(){
+      const projectKey = getCurrentProjectKey();
+      ui.projectLine.textContent = `IIN • EAD • Projeto: ${projectKey.toUpperCase()}`;
+      ui.subLine.textContent = "Filtre por nível e categoria";
+
+      LESSONS = getLessons();
+
+      hydrateCategoryOptions(LESSONS);
+      renderList();
+
+      ui.aulasSearch.addEventListener("input", renderList);
+      ui.aulasCategory.addEventListener("change", renderList);
+      ui.aulasLevel.addEventListener("change", renderList);
+
+      // se quiser auto-atualizar quando admin cadastra aula em outra aba
+      window.addEventListener("focus", () => {
+        const next = getLessons();
+        if(next.length !== LESSONS.length){
+          LESSONS = next;
+          hydrateCategoryOptions(LESSONS);
+          renderList();
+        }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

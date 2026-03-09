@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Gestão de Núcleos • IIN</title>
+
+  <link rel="icon" type="image/png" href="logo.png" />
+
+  <!-- CSS da plataforma EAD (carrega primeiro) -->
+  <link rel="stylesheet" href="ead/ead.css" />
+
+  <!-- CSS principal do sistema (carrega por último e vence conflitos) -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    .hidden { display: none !important; }
+    .tab-page.hidden { display: none !important; }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN -->
+  <section id="loginScreen" class="login-screen">
+    <video class="login-video" autoplay muted loop playsinline preload="metadata">
+      <source src="login-bg.mp4" type="video/mp4" />
+    </video>
+    <div class="login-video-overlay" aria-hidden="true"></div>
+
+    <div class="login-card">
+      <div class="brand login-brand">
+        <img src="logo.png" alt="Logo IIN" class="logo" />
+        <div>
+          <p class="eyebrow">Instituto Irmãos Nogueira</p>
+          <h1>Sistema de Gestão de Núcleos</h1>
+          <p class="sub">Presença • Matrículas • Relatórios • Visitantes</p>
+        </div>
+      </div>
+
+      <form id="loginForm" class="grid-form">
+        <label>Projeto
+          <select id="loginProject"></select>
+        </label>
+
+        <div class="login-project-badge">
+          <span class="login-project-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 21L20.3282 16.0077C20.6616 15.5075 20.8284 15.2574 20.9142 14.974C21 14.6906 21 14.39 21 13.7889V9.5C21 8.67157 20.3284 8 19.5 8C18.6716 8 18 8.67157 18 9.5V12.6667C18 13.3275 18 13.6579 17.8974 13.9658C17.7947 14.2737 17.5965 14.538 17.2 15.0667L16.5 16"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+              <path d="M7 21L3.6718 16.0077C3.33835 15.5075 3.17163 15.2574 3.08582 14.974C3 14.6906 3 14.39 3 13.7889V9.5C3 8.67157 3.67157 8 4.5 8C5.32843 8 6 8.67157 6 9.5V12.6667C6 13.3275 6 13.6579 6.10263 13.9658C6.20527 14.2737 6.40351 14.538 6.8 15.0667L7.5 16"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+              <path d="M8.34887 7.44953C8.40233 7.50558 8.45764 7.55851 8.51459 7.60834L10.5486 9.74053C11.2279 10.4527 11.5676 10.8088 11.9957 10.8088C12.4238 10.8088 12.7635 10.4527 13.4429 9.74053L15.2859 7.80854C16.6216 6.44581 16.6155 4.79413 15.64 3.77149C14.6645 2.74886 13.0889 2.74253 12.1208 3.75736C12.0534 3.82799 11.937 3.82946 11.8696 3.75883C10.9015 2.744 9.32858 2.74752 8.35636 3.76668C7.38414 4.78584 7.38079 6.43471 8.34887 7.44953Z"
+                stroke="currentColor" stroke-width="1.8"></path>
+            </svg>
+          </span>
+
+          <div class="login-project-texts">
+            <strong id="loginProjectTitle">Acesso à Plataforma</strong>
+            <span id="loginProjectSubtitle">Selecione um projeto para continuar</span>
+          </div>
+        </div>
+
+        <label>Usuário</label>
+        <div class="input-icon">
+          <input id="loginUsername" type="text" placeholder="Digite seu usuário" autocomplete="username" />
+        </div>
+
+        <label>Senha</label>
+        <div class="input-icon">
+          <input id="loginPassword" type="password" placeholder="Digite sua senha" autocomplete="current-password" />
+        </div>
+
+        <button type="submit" class="primary">Entrar</button>
+        <p id="loginMessage" class="report-status"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <main id="appShell" class="app-shell hidden">
+    <div class="top-fixed">
+      <header class="hero">
+        <div class="container hero-inner">
+          <div class="brand">
+            <img src="logo.png" alt="Logo IIN" class="logo" />
+            <div class="brand-text">
+              <p class="eyebrow">Instituto Irmãos Nogueira</p>
+              <h1 id="welcomeTitle">Painel</h1>
+              <p id="projectSubtitle" class="sub">Projeto</p>
+            </div>
+          </div>
+
+          <button id="logoutBtn" class="ghost hidden" type="button">Sair</button>
+        </div>
+      </header>
+
+      <!-- ABAS -->
+      <div class="tabs-wrap">
+        <div class="container">
+        <nav id="tabsBar" class="tabs-bar">
+          <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
+          <button class="tab-btn" data-tab="tab-chamada">Chamada</button>
+          <button class="tab-btn" data-tab="tab-professor">Colaborador</button>
+          <button class="tab-btn" data-tab="tab-aulas">Aulas</button>
+          <button class="tab-btn" data-tab="tab-gestao">Gestão</button>
+          <button class="tab-btn" data-tab="tab-estoque">Estoque</button>
+          <button class="tab-btn" data-tab="tab-relatorios">Relatórios</button>
+          <button class="tab-btn" data-tab="tab-admin">Admin</button>
+          <button class="tab-btn" data-tab="tab-fila">Fila de espera</button>
+          <button class="tab-btn" data-tab="tab-supervisao">Supervisão</button>
+        </nav>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO -->
+    <div class="container app-content">
+
+      <!-- DASHBOARD -->
+      <section id="tab-dashboard" class="tab-page">
+        <div class="panel-grid four">
+          <article class="metric-card">
+            <p>Total alunos</p>
+            <h3 id="totalStudents">0</h3>
+          </article>
+          <article class="metric-card">
+            <p>Presentes</p>
+            <h3 id="presentCount">0</h3>
+          </article>
+          <article class="metric-card">
+            <p>Faltas</p>
+            <h3 id="absentCount">0</h3>
+          </article>
+          <article class="metric-card">
+            <p>Kit entregue</p>
+            <h3 id="uniformDelivered">0</h3>
+          </article>
+        </div>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Resumo por núcleo</h2>
+            <span id="dashBadge" class="badge">0 alunos</span>
+          </div>
+
+          <div class="toolbar">
+            <label>Núcleo
+              <select id="dashNucleusFilter"></select>
+            </label>
+          </div>
+
+          <div id="dashChartHolder" class="chart-box">
+            <canvas id="dashChart"></canvas>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Indicadores Fixos / Visitantes / PCD</h2>
+            <span id="dashMiniBadge" class="badge">-</span>
+          </div>
+
+          <div class="toolbar">
+            <label><input id="dashShowFixed" type="checkbox" checked /> Alunos fixos</label>
+            <label><input id="dashShowVisitors" type="checkbox" checked /> Visitantes</label>
+            <label><input id="dashShowPCD" type="checkbox" checked /> PCD</label>
+          </div>
+
+          <div class="chart-box">
+            <canvas id="dashMiniChart"></canvas>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Alunos por núcleo</h2>
+            <span id="nucleusCountBadge" class="badge">0 núcleos</span>
+          </div>
+          <div id="nucleusCounts" class="chip-wrap"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Alertas de frequência</h2>
+          </div>
+          <ul id="alertsBoard" class="history-list"></ul>
+        </section>
+      </section>
+
+      <!-- CHAMADA -->
+      <section id="tab-chamada" class="tab-page hidden">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Chamada</h2>
+            <span id="professorNucleusBadge" class="badge">Turma</span>
+          </div>
+
+          <div class="grid-form two">
+            <label>Data da aula
+              <input id="professorClassDate" type="date" />
+            </label>
+
+            <label>Turma / Horário
+              <input id="professorClassSchedule" type="text" placeholder="Ex.: 08:00 às 09:00" />
+            </label>
+
+            <label>Colaborador responsável
+              <input id="professorClassProfessorName" type="text" placeholder="Nome do colaborador" />
+            </label>
+
+            <label>Monitor
+              <input id="professorClassMonitorName" type="text" placeholder="Nome do monitor" />
+            </label>
+          </div>
+
+          <div class="toolbar">
+            <button id="professorClassSave" class="primary" type="button">Salvar dados da aula</button>
+            <button id="endClassBtn" class="warn" type="button">Encerrar aula</button>
+            <span id="classLockBadge" class="badge danger hidden">Aula encerrada</span>
+          </div>
+
+          <p id="professorClassStatus" class="report-status"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Busca</h2>
+          </div>
+
+          <label>Buscar aluno
+            <input id="attendanceSearch" type="text" placeholder="Digite o nome do aluno" />
+          </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Lista da chamada</h2>
+          </div>
+
+          <div id="professorBoard" class="nucleus-board"></div>
+        </section>
+      </section>
+
+      <!-- COLABORADOR -->
+      <section id="tab-professor" class="tab-page hidden">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Ferramentas do Colaborador</h2>
+          </div>
+
+          <div class="grid-form two">
+            <label id="teacherAbsStudentWrap">Aluno (atestado)
+              <select id="teacherAbsStudent"></select>
+            </label>
+
+            <label>Tipo de atestado
+              <select id="teacherAbsType">
+                <option value="aluno">Aluno</option>
+                <option value="colaborador">Colaborador</option>
+              </select>
+            </label>
+
+            <label>Arquivo de atestado
+              <input id="teacherAbsFile" type="file" accept=".pdf,image/*" />
+            </label>
+
+            <div class="toolbar compact">
+              <button id="teacherAbsSave" type="button" class="small-btn">Salvar atestado</button>
+            </div>
+
+            <label>Tema Momento do Mestre
+              <select id="teacherMestreTheme">
+                <option value="disciplina">Disciplina</option>
+                <option value="respeito">Respeito</option>
+                <option value="trabalho_em_equipe">Trabalho em equipe</option>
+                <option value="amor">Amor</option>
+                <option value="meio_ambiente">Meio ambiente</option>
+                <option value="cultura">Cultura</option>
+                <option value="saude_autocuidado">Saúde e autocuidado</option>
+                <option value="projeto_de_vida">Projeto de vida</option>
+                <option value="esporte_movimento">Esporte e movimento</option>
+                <option value="artes_criatividade">Artes e criatividade</option>
+                <option value="educacao_emocional">Educação emocional</option>
+                <option value="leitura_letramento">Leitura e letramento</option>
+              </select>
+            </label>
+
+            <div class="toolbar compact">
+              <button id="teacherMestreOpen" type="button" class="ghost">Abrir PDF</button>
+            </div>
+
+            <div class="toolbar compact">
+              <button id="teacherWhatsappBtn" type="button" class="primary">Abrir WhatsApp (grupo)</button>
+              <button id="teacherWhatsappCopy" type="button" class="ghost">Copiar texto da chamada</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Planejamento semanal</h2>
+          </div>
+
+          <form id="planningForm" class="grid-form two">
+            <label>Semana (início)
+              <input id="planningWeek" type="date" />
+            </label>
+
+            <label>Tema
+              <input id="planningTheme" type="text" placeholder="Tema da semana" />
+            </label>
+
+            <label>Momento do Mestre
+              <textarea id="planningGoals" rows="2" placeholder="Objetivos / Momento do Mestre"></textarea>
+            </label>
+
+            <label>Atividades
+              <textarea id="planningActivities" rows="2" placeholder="Atividades planejadas"></textarea>
+            </label>
+
+            <button type="submit" class="primary">Salvar planejamento</button>
+          </form>
+
+          <ul id="planningList" class="history-list"></ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Histórico da turma</h2>
+          </div>
+
+          <label>Filtrar por data
+            <input id="professorHistoryDate" type="date" />
+          </label>
+
+          <ul id="professorHistory" class="history-list"></ul>
+        </section>
+      </section>
+
+      <!-- AULAS (EAD v2) -->
+      <section id="tab-aulas" class="tab-page hidden">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Aulas (EAD)</h2>
+            <span class="badge">EAD</span>
+          </div>
+
+          <div id="eadRoot" class="ead-root">
+            <div id="eadApp">
+              <div style="padding:16px;opacity:.85">
+                Carregando plataforma de aulas...
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- GESTÃO -->
+      <section id="tab-gestao" class="tab-page hidden">
+        <div id="gestaoArea">
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>Cadastro de Aluno</h2>
+            </div>
+
+            <form id="studentForm" class="grid-form three">
+              <label>Nome do aluno
+                <input id="studentName" type="text" required />
+              </label>
+              <label>Núcleo
+                <select id="studentNucleus"></select>
+              </label>
+              <label>Modalidade
+                <select id="studentModality"></select>
+              </label>
+
+              <label>Turma / Horário
+                <select id="studentSchedule"></select>
+              </label>
+              <label>Contato do aluno
+                <input id="studentContact" type="text" />
+              </label>
+              <label>PCD
+                <select id="studentPCD">
+                  <option value="nao">Não</option>
+                  <option value="sim">Sim</option>
+                </select>
+              </label>
+
+              <label>Data de nascimento
+                <input id="studentBirthDate" type="date" />
+              </label>
+              <label>Data de inscrição
+                <input id="studentStartDate" type="date" />
+              </label>
+              <label>Necessidades / observações
+                <input id="studentRequirements" type="text" />
+              </label>
+
+              <label>Responsável
+                <input id="guardianName" type="text" />
+              </label>
+              <label>Telefone responsável
+                <input id="guardianPhone" type="text" />
+              </label>
+              <label>E-mail responsável
+                <input id="guardianEmail" type="email" />
+              </label>
+
+              <label>Escola
+                <input id="studentSchoolName" type="text" />
+              </label>
+
+              <label>Tipo escola
+                <select id="studentSchoolType">
+                  <option value="">Selecione</option>
+                  <option value="Municipal">Escola Municipal</option>
+                  <option value="Estadual">Escola Estadual</option>
+                  <option value="Particular">Escola Particular</option>
+                  <option value="Militar">Escola Militar</option>
+                  <option value="Federal">Escola Federal</option>
+                </select>
+              </label>
+
+              <label>Rua
+                <input id="addrStreet" type="text" />
+              </label>
+
+              <label>Número
+                <input id="addrNumber" type="text" />
+              </label>
+              <label>Bairro
+                <input id="addrDistrict" type="text" />
+              </label>
+              <label>CEP
+                <input id="addrZip" type="text" />
+              </label>
+
+              <label>Complemento
+                <input id="addrComplement" type="text" />
+              </label>
+
+              <label>Tamanho Camiseta
+                <select id="sizeShirt" class="size-select">
+                  <option value="">Selecione</option>
+                  <option>6 anos</option><option>8 anos</option><option>10 anos</option><option>12 anos</option><option>14 anos</option>
+                  <option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option>
+                </select>
+              </label>
+
+              <label>Tamanho Shorts
+                <select id="sizeShort" class="size-select">
+                  <option value="">Selecione</option>
+                  <option>6 anos</option><option>8 anos</option><option>10 anos</option><option>12 anos</option><option>14 anos</option>
+                  <option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option>
+                </select>
+              </label>
+
+              <label>Tamanho Kimono
+                <select id="sizeKimono" class="size-select">
+                  <option value="">Selecione</option>
+                  <option>M0</option><option>M1</option><option>M2</option><option>M3</option><option>M4</option>
+                  <option>A0</option><option>A1</option><option>A2</option><option>A3</option><option>A4</option><option>A5</option>
+                </select>
+              </label>
+
+              <button type="submit" class="primary">Adicionar aluno</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>Calendário de aulas por núcleo</h2>
+            </div>
+
+            <form id="classCalendarForm" class="grid-form three">
+              <label>Núcleo
+                <select id="calendarNucleus"></select>
+              </label>
+              <label>Data da aula
+                <input id="calendarDate" type="date" />
+              </label>
+
+              <div></div>
+
+              <label>Horário 1 início <input id="calendarStartTime1" type="time" /></label>
+              <label>Horário 1 fim <input id="calendarEndTime1" type="time" /></label>
+              <div></div>
+
+              <label>Horário 2 início <input id="calendarStartTime2" type="time" /></label>
+              <label>Horário 2 fim <input id="calendarEndTime2" type="time" /></label>
+              <div></div>
+
+              <label>Horário 3 início <input id="calendarStartTime3" type="time" /></label>
+              <label>Horário 3 fim <input id="calendarEndTime3" type="time" /></label>
+              <div></div>
+
+              <label>Horário 4 início <input id="calendarStartTime4" type="time" /></label>
+              <label>Horário 4 fim <input id="calendarEndTime4" type="time" /></label>
+              <div></div>
+
+              <label>Horário 5 início <input id="calendarStartTime5" type="time" /></label>
+              <label>Horário 5 fim <input id="calendarEndTime5" type="time" /></label>
+              <div></div>
+
+              <label>Horário 6 início <input id="calendarStartTime6" type="time" /></label>
+              <label>Horário 6 fim <input id="calendarEndTime6" type="time" /></label>
+              <div></div>
+
+              <button type="submit" class="primary">Salvar calendário</button>
+            </form>
+
+            <div id="classCalendarBoard" class="cards-grid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>Visitantes</h2>
+              <span id="visitorsBadge" class="badge">0</span>
+            </div>
+
+            <form id="visitorForm" class="grid-form three">
+              <label>Nome
+                <input id="visitorName" type="text" required />
+              </label>
+              <label>Núcleo
+                <select id="visitorNucleus"></select>
+              </label>
+              <label>Data da visita
+                <input id="visitorDate" type="date" />
+              </label>
+
+              <label>Data de nascimento
+                <input id="visitorBirthDate" type="date" />
+              </label>
+
+              <label>Contato
+                <input id="visitorContact" type="text" />
+              </label>
+              <label>Observações
+                <input id="visitorNotes" type="text" />
+              </label>
+
+              <div class="toolbar">
+                <button type="submit" class="primary">Salvar visita</button>
+              </div>
+            </form>
+
+            <ul id="visitorsList" class="history-list"></ul>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>WhatsApp (mensagem individual)</h2>
+            </div>
+
+            <form id="whatsForm" class="grid-form two">
+              <label>Aluno
+                <select id="whatsStudent"></select>
+              </label>
+              <label>Mensagem
+                <input id="whatsMessage" type="text" placeholder="Mensagem para enviar" />
+              </label>
+
+              <button type="submit" class="primary">Abrir no WhatsApp</button>
+            </form>
+
+            <p id="whatsStatus" class="report-status"></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>Tabela de uniforme / kit</h2>
+            </div>
+
+            <div class="toolbar">
+              <label>Núcleo
+                <select id="uniformNucleusFilter"></select>
+              </label>
+            </div>
+
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Aluno</th>
+                    <th>Núcleo</th>
+                    <th>Modalidade</th>
+                    <th>Itens permitidos</th>
+                    <th>Entrega</th>
+                    <th>Ação</th>
+                    <th>Excluir</th>
+                  </tr>
+                </thead>
+                <tbody id="uniformTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>Estoque</h2>
+            </div>
+
+            <form id="stockForm" class="grid-form two">
+              <label>Item
+                <select id="stockSize">
+                  <option value="camiseta">Camiseta</option>
+                  <option value="shorts">Shorts</option>
+                  <option value="kimono">Kimono</option>
+                  <option value="bandagem">Bandagem</option>
+                  <option value="protetor_bucal">Protetor bucal</option>
+                </select>
+              </label>
+              <label>Ajuste (+/-)
+                <input id="stockDelta" type="number" value="1" />
+              </label>
+
+              <button type="submit" class="primary">Ajustar estoque</button>
+            </form>
+
+            <div id="stockView" class="cards-grid"></div>
+          </section>
+
+        </div>
+      </section>
+
+<section class="panel">
+  <div class="panel-title-row">
+    <h2>Alunos cadastrados</h2>
+    <span class="badge" id="gestaoAlunosBadge">0</span>
+  </div>
+
+  <div class="toolbar" style="gap:10px; flex-wrap:wrap;">
+    <input
+      id="gestaoAlunoBusca"
+      type="text"
+      placeholder="Buscar por nome, núcleo, modalidade ou responsável"
+      style="max-width:320px"
+    />
+
+    <select id="gestaoAlunoFiltroNucleo">
+      <option value="todos">Todos os núcleos</option>
+    </select>
+
+    <select id="gestaoAlunoFiltroModalidade">
+      <option value="todos">Todas as modalidades</option>
+      <option value="Boxe">Boxe</option>
+      <option value="Muay Thai">Muay Thai</option>
+      <option value="Jiu Jitso">Jiu Jitso</option>
+    </select>
+  </div>
+
+  <div class="table-wrapper" style="margin-top:12px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Aluno</th>
+          <th>Núcleo</th>
+          <th>Modalidade</th>
+          <th>Horário</th>
+          <th>Responsável</th>
+          <th>Contato</th>
+        </tr>
+      </thead>
+      <tbody id="gestaoAlunosTableBody"></tbody>
+    </table>
+  </div>
+</section>
+
+      <!-- ESTOQUE (LANCHES) -->
+      <section id="tab-estoque" class="tab-page hidden">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Estoque • Lanches</h2>
+            <span id="snackBadge" class="badge">Semana</span>
+          </div>
+
+          <div class="toolbar" style="align-items:flex-end">
+            <label>Data
+              <input id="snackDate" type="date" />
+            </label>
+
+            <button id="snackTodayBtn" type="button" class="ghost">Hoje</button>
+
+            <label>Núcleo
+              <select id="snackNucleusFilter"></select>
+            </label>
+
+            <span id="snackStatus" class="report-status muted"></span>
+          </div>
+
+          <div class="snack-grid">
+            <div id="snackCards" class="snack-cards"></div>
+
+            <div class="snack-history panel-lite">
+              <div class="snack-history-head">
+                <strong>Últimos movimentos</strong>
+                <span id="snackHistoryBadge" class="badge">0</span>
+              </div>
+              <ul id="snackHistoryList" class="history-list"></ul>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- RELATÓRIOS -->
+      <section id="tab-relatorios" class="tab-page hidden">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Relatório impresso / exportação</h2>
+          </div>
+
+          <div class="grid-form three">
+            <label>Período
+              <select id="adminReportPeriod">
+                <option value="diario">Diário</option>
+                <option value="semanal" selected>Semanal</option>
+                <option value="mensal">Mensal</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="semestral">Semestral</option>
+                <option value="anual">Anual</option>
+              </select>
+            </label>
+
+            <label>Núcleo
+              <select id="adminReportNucleusFilter"></select>
+            </label>
+
+            <label>Tipo de impressão
+              <select id="printType">
+                <option value="resumido">Resumido</option>
+                <option value="profissional">Profissional</option>
+                <option value="completo" selected>Completo</option>
+                <option value="personalizado">Personalizado</option>
+              </select>
+            </label>
+          </div>
+
+          <p id="adminReportRangeInfo" class="muted"></p>
+
+          <div id="printCustomBox" class="panel-lite hidden">
+            <p class="muted">No modo personalizado, escolha os campos do checklist.</p>
+            <div id="printFieldsGrid" class="print-fields-grid"></div>
+          </div>
+
+          <div class="toolbar">
+            <button id="adminGenerateReportBtn" class="ghost" type="button">Baixar TXT</button>
+            <button id="adminPrintReportBtn" class="primary" type="button">Imprimir / Salvar PDF</button>
+          </div>
+
+          <p id="adminReportStatus" class="report-status"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Histórico por núcleo</h2>
+            <span class="badge">Registros</span>
+          </div>
+
+          <div class="toolbar">
+            <label>Núcleo
+              <select id="adminLogNucleusFilter"></select>
+            </label>
+            <button id="adminOpenLogModal" type="button" class="ghost">Abrir histórico</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Relatórios</h2>
+            <span class="badge">Visualização</span>
+          </div>
+
+          <div id="attendanceReportBoard" class="cards-grid"></div>
+        </section>
+      </section>
+
+      <!-- ADMIN -->
+      <section id="tab-admin" class="tab-page hidden">
+        <div id="adminArea">
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>Usuários</h2>
+            </div>
+
+            <form id="userForm" class="grid-form three">
+              <label>Usuário
+                <input id="newUsername" type="text" />
+              </label>
+
+              <label>Senha
+                <input id="newPassword" type="text" />
+              </label>
+
+              <label>Perfil
+               <select id="newRole">
+                 <option value="professor">Colaborador</option>
+                 <option value="gestao">Gestão</option>
+                 <option value="supervisao">Supervisão</option>
+                 <option value="admin">Admin</option>
+               </select>
+              </label>
+
+              <label>Núcleo (colaborador)
+                <select id="newNucleus"></select>
+              </label>
+
+              <button type="submit" class="primary">Criar usuário</button>
+            </form>
+
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Perfil</th>
+                    <th>Núcleo</th>
+                    <th>Senha</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <h2>Momento do Mestre (Admin)</h2>
+            </div>
+
+            <div class="grid-form two">
+              <label>Tema
+                <select id="adminMestreTheme">
+                  <option value="disciplina">Disciplina</option>
+                  <option value="respeito">Respeito</option>
+                  <option value="trabalho_em_equipe">Trabalho em equipe</option>
+                  <option value="amor">Amor</option>
+                  <option value="meio_ambiente">Meio ambiente</option>
+                  <option value="cultura">Cultura</option>
+                  <option value="saude_autocuidado">Saúde e autocuidado</option>
+                  <option value="projeto_de_vida">Projeto de vida</option>
+                  <option value="esporte_movimento">Esporte e movimento</option>
+                  <option value="artes_criatividade">Artes e criatividade</option>
+                  <option value="educacao_emocional">Educação emocional</option>
+                  <option value="leitura_letramento">Leitura e letramento</option>
+                </select>
+              </label>
+
+              <label>Arquivo PDF
+                <input id="adminMestreFile" type="file" accept=".pdf" />
+              </label>
+            </div>
+
+            <div class="toolbar">
+              <button id="adminMestreSave" type="button" class="primary">Salvar PDF do tema</button>
+            </div>
+
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tema</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="adminMestreTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Painéis extras entram por JS (ensureAdminExtraPanels) -->
+
+        </div>
+      </section>
+
+            <!-- ✅ FILA DE ESPERA (fora do tab-admin) -->
+      <section id="tab-fila" class="tab-page hidden">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Fila de Espera</h2>
+            <span class="badge">Inscrições Online</span>
+          </div>
+
+          <div class="panel-grid four" style="margin-top:10px">
+            <article class="metric-card">
+              <p>📊 Inscrições (mês)</p>
+              <h3 id="totalMes">0</h3>
+            </article>
+            <article class="metric-card">
+              <p>🟢 Confirmadas</p>
+              <h3 id="confirmadas">0</h3>
+            </article>
+            <article class="metric-card">
+              <p>🟡 Aguardando</p>
+              <h3 id="aguardando">0</h3>
+            </article>
+            <article class="metric-card">
+              <p>🔴 Sem resposta</p>
+              <h3 id="semResposta">0</h3>
+            </article>
+          </div>
+
+          <div class="toolbar" style="margin-top:12px; gap:10px; flex-wrap:wrap">
+            <button type="button" class="ghost" id="btnAtualizarFila">Atualizar</button>
+
+            <input id="filaBusca" type="text" placeholder="Buscar (nome/whatsapp/núcleo)" style="max-width:260px" />
+
+            <select id="filaFiltroStatus">
+              <option value="">Todos</option>
+              <option value="novo">novo</option>
+              <option value="contatado">contatado</option>
+              <option value="confirmou">confirmou</option>
+              <option value="matriculado">matriculado</option>
+              <option value="arquivado">arquivado</option>
+            </select>
+
+            <select id="filaArquivados">
+              <option value="0">Não mostrar arquivados</option>
+              <option value="1">Mostrar arquivados</option>
+            </select>
+
+            <button type="button" class="ghost" id="btnApiKeyFila">Definir API Key</button>
+
+            <span id="filaStatus" class="report-status muted"></span>
+          </div>
+
+          <div class="table-wrapper" style="margin-top:12px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Aluno</th>
+                  <th>Idade</th>
+                  <th>Responsável</th>
+                  <th>WhatsApp</th>
+                  <th>Núcleo</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaFilaBody"></tbody>
+            </table>
+          </div>
+
+          <!-- Modal da fila (Ver / Editar) -->
+          <div id="filaModal" class="modal hidden">
+            <div class="modal-content wide">
+              <div class="modal-header">
+                <h3 id="filaModalTitle">Detalhes</h3>
+                <button id="filaModalClose" type="button" class="ghost">Fechar</button>
+              </div>
+
+              <div id="filaModalBody"></div>
+            </div>
+          </div>
+
+      </section>
+      </section>
+
+      <section id="tab-supervisao" class="tab-page hidden">
+  <section class="panel">
+    <div class="panel-title-row">
+      <h2>Supervisão</h2>
+      <span class="badge">Metodologia IIN</span>
+    </div>
+
+    <p class="muted">
+      Preencha o checklist diário e o acompanhamento de metodologia de forma organizada.
+    </p>
+
+    <div class="grid-form four supervisao-topo">
+      <label>Data
+        <input id="supervisaoData" type="date" />
+      </label>
+
+      <label>Núcleo
+        <select id="supervisaoNucleo">
+          <option value="">Selecione</option>
+        </select>
+      </label>
+
+      <label>Modalidade
+        <select id="supervisaoModalidade">
+          <option value="">Selecione</option>
+          <option value="Boxe">Boxe</option>
+          <option value="Muay Thai">Muay Thai</option>
+          <option value="Jiu Jitso">Jiu Jitso</option>
+        </select>
+      </label>
+
+      <label>Instrutor
+        <input id="supervisaoInstrutor" type="text" placeholder="Nome do instrutor" />
+      </label>
+    </div>
+  </section>
+
+  <section class="panel supervisao-bloco">
+    <div class="panel-title-row">
+      <h2>Checklist Diário • Metodologia IIN</h2>
+      <span class="badge">Diário</span>
+    </div>
+
+    <div class="supervisao-table-wrap">
+      <table class="supervisao-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item</th>
+            <th>T1</th>
+            <th>T2</th>
+            <th>T3</th>
+            <th>T4</th>
+            <th>T5</th>
+            <th>T6</th>
+          </tr>
+        </thead>
+        <tbody id="supervisaoChecklistDiarioBody"></tbody>
+      </table>
+    </div>
+
+    <div class="supervisao-legenda">
+      <span>✔ Sim</span>
+      <span>• Parcial</span>
+      <span>✖ Não</span>
+    </div>
+
+    <label class="supervisao-observacoes">
+      Observações gerais
+      <textarea id="supervisaoObsGerais" rows="5" placeholder="Escreva observações gerais da supervisão diária"></textarea>
+    </label>
+
+    <div class="grid-form four">
+      <label>Avaliação geral
+        <select id="supervisaoAvaliacaoGeral">
+          <option value="">Selecione</option>
+          <option value="ruim">Ruim</option>
+          <option value="insuficiente">Insuficiente</option>
+          <option value="regular">Regular</option>
+          <option value="satisfatorio">Satisfatório</option>
+          <option value="excelente">Excelente</option>
+        </select>
+      </label>
+
+      <label>Supervisor
+        <input id="supervisaoSupervisor" type="text" placeholder="Nome do supervisor" />
+      </label>
+
+      <label>CPF Supervisor
+        <input id="supervisaoSupervisorCpf" type="text" placeholder="CPF do supervisor" />
+      </label>
+
+      <label>CPF Instrutor
+        <input id="supervisaoInstrutorCpf" type="text" placeholder="CPF do instrutor" />
+      </label>
+    </div>
+  </section>
+
+  <section class="panel supervisao-bloco">
+    <div class="panel-title-row">
+      <h2>Acompanhamento de Metodologia</h2>
+      <span class="badge">Mensal</span>
+    </div>
+
+    <div class="grid-form four">
+      <label>Mês
+        <input id="supervisaoMes" type="month" />
+      </label>
+
+      <label>Dia
+        <input id="supervisaoDia" type="date" />
+      </label>
+
+      <label>Supervisor
+        <input id="supervisaoSupervisorMensal" type="text" placeholder="Nome do supervisor" />
+      </label>
+
+      <label>Gerente Geral
+        <input id="supervisaoGerenteGeral" type="text" placeholder="Nome do gerente geral" />
+      </label>
+    </div>
+
+    <h3 class="supervisao-subtitle">Instrutores</h3>
+    <div class="supervisao-table-wrap">
+      <table class="supervisao-table supervisao-notas">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Critério</th>
+            <th>1ª Sem.</th>
+            <th>2ª Sem.</th>
+            <th>3ª Sem.</th>
+            <th>4ª Sem.</th>
+            <th>5ª Sem.</th>
+          </tr>
+        </thead>
+        <tbody id="supervisaoMetodologiaInstrutoresBody"></tbody>
+      </table>
+    </div>
+
+    <h3 class="supervisao-subtitle">Turmas</h3>
+    <div class="supervisao-table-wrap">
+      <table class="supervisao-table supervisao-notas">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Critério</th>
+            <th>1ª Sem.</th>
+            <th>2ª Sem.</th>
+            <th>3ª Sem.</th>
+            <th>4ª Sem.</th>
+            <th>5ª Sem.</th>
+          </tr>
+        </thead>
+        <tbody id="supervisaoMetodologiaTurmasBody"></tbody>
+      </table>
+    </div>
+
+    <div class="supervisao-legenda">
+      <span>Referência:</span>
+      <span>1 = Ruim</span>
+      <span>2 = Insuficiente</span>
+      <span>3 = Regular</span>
+      <span>4 = Satisfatório</span>
+      <span>5 = Excelente</span>
+    </div>
+
+    <div class="grid-form four">
+      <label>Data de finalização
+        <input id="supervisaoFinalizacao" type="date" />
+      </label>
+
+      <label>CPF Supervisor
+        <input id="supervisaoSupervisorMensalCpf" type="text" placeholder="CPF do supervisor" />
+      </label>
+
+      <label>CPF Gerente Geral
+        <input id="supervisaoGerenteCpf" type="text" placeholder="CPF do gerente geral" />
+      </label>
+    </div>
+
+    <div class="toolbar" style="margin-top:16px;">
+      <button type="button" class="primary" id="salvarSupervisaoBtn">Salvar checklist</button>
+    </div>
+  </section>
+</section>
+
+    </div>
+  </main>
+
+  <!-- TEMPLATE CARD CHAMADA -->
+   
+  <template id="attendanceCardTemplate">
+    <article class="student-card">
+      <div class="student-card-head">
+        <strong class="student-name">Aluno</strong>
+        <span class="freq-pill">0%</span>
+      </div>
+      <p class="student-contact muted">Contato</p>
+      <p class="student-class-info muted">Turma</p>
+      <p class="student-status muted">Status</p>
+      <div class="student-actions">
+        <button type="button" class="btn-present">P</button>
+        <button type="button" class="btn-absent">F</button>
+        <button type="button" class="btn-justified">J</button>
+        <button type="button" class="btn-sa">S/A</button>
+      </div>
+    </article>
+  </template>
+
+  <!-- MODAL LOG -->
+  <div id="logModal" class="modal hidden">
+    <div class="modal-content wide">
+      <div class="modal-header">
+        <h3 id="logModalTitle">Histórico</h3>
+        <button id="logModalClose" type="button" class="ghost">Fechar</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Núcleo</th>
+              <th>Evento</th>
+              <th>Usuário</th>
+              <th>Detalhe</th>
+            </tr>
+          </thead>
+          <tbody id="logModalBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PDF -->
+  <div id="pdfModal" class="modal hidden">
+    <div class="modal-content xl">
+      <div class="modal-header">
+        <h3 id="pdfModalTitle">PDF</h3>
+        <button id="pdfModalClose" type="button" class="ghost">Fechar</button>
+      </div>
+      <iframe id="pdfFrame" title="Visualizador PDF"></iframe>
+    </div>
+  </div>
+
+  <script defer src="ead/ead.js"></script>
+<script defer src="fila.js"></script>
+<script defer src="app.js"></script>
+</body>
+</html>
