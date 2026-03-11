@@ -2649,3 +2649,24 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
     overflow-x: hidden !important;
   }
 }
+
+/* ===== CORRIGE CAMPO DATA NA CHAMADA MOBILE ===== */
+@media (max-width: 700px) {
+
+  #professorClassDate,
+  input[type="date"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .grid-form input,
+  .grid-form select {
+    width: 100% !important;
+  }
+
+  .grid-form {
+    overflow: hidden;
+  }
+
+}
