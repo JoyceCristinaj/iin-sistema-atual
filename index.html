@@ -119,74 +119,144 @@
     <div class="container app-content">
 
       <!-- DASHBOARD -->
-      <section id="tab-dashboard" class="tab-page">
+      <section id="tab-dashboard" class="tab-page dashboard-page">
         <div class="panel-grid four dashboard-metrics">
           <article class="metric-card">
+            <div class="metric-card-top">
+              <span class="metric-kicker">Base atual</span>
+              <span class="metric-card-icon metric-card-icon-total" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M5 18.5C5 16.567 6.567 15 8.5 15H15.5C17.433 15 19 16.567 19 18.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="8.5" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+                  <circle cx="15.5" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+              </span>
+            </div>
             <p>Total alunos</p>
             <h3 id="totalStudents">0</h3>
+            <span class="metric-card-note">matriculas visiveis no projeto</span>
           </article>
           <article class="metric-card">
+            <div class="metric-card-top">
+              <span class="metric-kicker">Frequencia</span>
+              <span class="metric-card-icon metric-card-icon-present" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 12.5L10 16.5L18 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.6"/>
+                </svg>
+              </span>
+            </div>
             <p>Presentes</p>
             <h3 id="presentCount">0</h3>
+            <span class="metric-card-note">alunos com presenca registrada</span>
           </article>
           <article class="metric-card">
+            <div class="metric-card-top">
+              <span class="metric-kicker">Atencao</span>
+              <span class="metric-card-icon metric-card-icon-absent" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 8L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M16 8L8 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.6"/>
+                </svg>
+              </span>
+            </div>
             <p>Faltas</p>
             <h3 id="absentCount">0</h3>
+            <span class="metric-card-note">ausencias no recorte atual</span>
           </article>
           <article class="metric-card">
+            <div class="metric-card-top">
+              <span class="metric-kicker">Entrega</span>
+              <span class="metric-card-icon metric-card-icon-kit" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 8.5H18V18.5H6V8.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M9 8.5V6.8C9 5.806 9.806 5 10.8 5H13.2C14.194 5 15 5.806 15 6.8V8.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  <path d="M6 12H18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </div>
             <p>Kit entregue</p>
             <h3 id="uniformDelivered">0</h3>
+            <span class="metric-card-note">uniformes liberados para alunos</span>
           </article>
         </div>
 
-        <section class="panel">
-          <div class="panel-title-row">
-            <h2>Resumo por núcleo</h2>
-            <span id="dashBadge" class="badge">0 alunos</span>
-          </div>
+        <div class="dashboard-primary-grid">
+        <section class="panel dashboard-chart-panel">
+  <div class="panel-title-row dashboard-panel-head">
+    <div class="dashboard-title-stack">
+      <span class="dashboard-panel-kicker">Leitura por nucleo</span>
+      <h2>Resumo por núcleo</h2>
+      <p class="dashboard-panel-subtitle">Visão geral de presença, faltas e participação por núcleo</p>
+    </div>
+    <span id="dashBadge" class="badge dashboard-badge-strong">0 alunos</span>
+  </div>
 
-          <div class="toolbar">
-            <label>Núcleo
-              <select id="dashNucleusFilter"></select>
-            </label>
-          </div>
+  <div class="dashboard-toolbar-row">
+  <div class="dashboard-filter-bar">
+    <label>Núcleo
+      <select id="dashNucleusFilter"></select>
+    </label>
+  </div>
 
-          <div id="dashChartHolder" class="chart-box">
-            <canvas id="dashChart"></canvas>
-          </div>
-        </section>
+  <div class="dashboard-chart-legend" aria-label="Legenda do grafico">
+    <span class="dashboard-legend-item"><i class="legend-dot legend-dot-present"></i>Presenca</span>
+    <span class="dashboard-legend-item"><i class="legend-dot legend-dot-justified"></i>Justificado</span>
+    <span class="dashboard-legend-item"><i class="legend-dot legend-dot-absent"></i>Falta</span>
+    <span class="dashboard-legend-item"><i class="legend-dot legend-dot-sa"></i>SA</span>
+  </div>
+  </div>
 
-        <section class="panel">
-          <div class="panel-title-row">
-            <h2>Indicadores Fixos / Visitantes / PCD</h2>
-            <span id="dashMiniBadge" class="badge">-</span>
-          </div>
+  <div id="dashChartHolder" class="chart-box dashboard-chart-box">
+    <canvas id="dashChart"></canvas>
+  </div>
+</section>
 
-          <div class="toolbar">
-            <label><input id="dashShowFixed" type="checkbox" checked /> Alunos fixos</label>
-            <label><input id="dashShowVisitors" type="checkbox" checked /> Visitantes</label>
-            <label><input id="dashShowPCD" type="checkbox" checked /> PCD</label>
-          </div>
+        <section class="panel dashboard-highlight-panel">
+  <div class="panel-title-row dashboard-panel-head">
+    <h2>Indicadores estratégicos</h2>
+    <span class="badge">Resumo rápido</span>
+  </div>
 
-          <div class="chart-box">
-            <canvas id="dashMiniChart"></canvas>
-          </div>
-        </section>
+  <div class="dashboard-insights-grid">
+    <article class="insight-card insight-card-fixed">
+      <div class="insight-label">Alunos fixos</div>
+      <div id="dashFixedValue" class="insight-value">0</div>
+      <div class="insight-sub">5+ registros de presença</div>
+    </article>
 
-        <section class="panel">
-          <div class="panel-title-row">
+    <article class="insight-card insight-card-visitors">
+      <div class="insight-label">Visitantes</div>
+      <div id="dashVisitorsValue" class="insight-value">0</div>
+      <div class="insight-sub">Visitantes cadastrados no projeto</div>
+    </article>
+
+    <article class="insight-card insight-card-pcd">
+      <div class="insight-label">PCD</div>
+      <div id="dashPCDValue" class="insight-value">0</div>
+      <div class="insight-sub">Alunos com marcação PCD</div>
+    </article>
+  </div>
+</section>
+        </div>
+
+        <div class="dashboard-secondary-grid">
+        <section class="panel dashboard-summary-panel">
+          <div class="panel-title-row dashboard-panel-head">
             <h2>Alunos por núcleo</h2>
             <span id="nucleusCountBadge" class="badge">0 núcleos</span>
           </div>
           <div id="nucleusCounts" class="chip-wrap"></div>
         </section>
 
-        <section class="panel">
-          <div class="panel-title-row">
+        <section class="panel dashboard-alerts-panel">
+          <div class="panel-title-row dashboard-panel-head">
             <h2>Alertas de frequência</h2>
           </div>
           <ul id="alertsBoard" class="history-list"></ul>
         </section>
+        </div>
       </section>
 
       <!-- CHAMADA -->
@@ -650,30 +720,32 @@
         </section>
 
         <section class="panel">
-          <div class="panel-title-row">
-            <h2>Estoque físico</h2>
-          </div>
+  <div class="panel-title-row">
+    <h2>Estoque físico</h2>
+  </div>
 
-          <form id="stockForm" class="grid-form two">
-            <label>Item
-              <select id="stockSize">
-                <option value="camiseta">Camiseta</option>
-                <option value="shorts">Shorts</option>
-                <option value="kimono">Kimono</option>
-                <option value="bandagem">Bandagem</option>
-                <option value="protetor_bucal">Protetor bucal</option>
-              </select>
-            </label>
+  <form id="stockForm" class="stock-form-compact">
+    <label>Item
+      <select id="stockSize">
+        <option value="camiseta">Camiseta</option>
+        <option value="shorts">Shorts</option>
+        <option value="kimono">Kimono</option>
+        <option value="bandagem">Bandagem</option>
+        <option value="protetor_bucal">Protetor bucal</option>
+      </select>
+    </label>
 
-            <label>Ajuste (+/-)
-              <input id="stockDelta" type="number" value="1" />
-            </label>
+    <label>Ajuste (+/-)
+      <input id="stockDelta" type="number" value="1" />
+    </label>
 
-            <button type="submit" class="primary">Ajustar estoque</button>
-          </form>
+    <div class="stock-form-action">
+      <button type="submit" class="primary">Ajustar estoque</button>
+    </div>
+  </form>
 
-          <div id="stockView" class="cards-grid"></div>
-        </section>
+  <div id="stockView" class="stock-cards-compact"></div>
+</section>
 
         <section id="snackStockPanel" class="panel">
           <div class="panel-title-row">
@@ -786,97 +858,118 @@
       <section id="tab-admin" class="tab-page hidden">
         <div id="adminArea">
 
-          <section class="panel">
-            <div class="panel-title-row">
-              <h2>Usuários</h2>
-            </div>
+          <section class="panel collapsible-panel is-open" id="usersPanel">
+  <button type="button" class="panel-collapse-toggle" id="usersPanelToggle" aria-expanded="true" aria-controls="usersPanelContent">
+    <div class="panel-collapse-head">
+      <h2>Usuários</h2>
+      <span class="panel-collapse-sub">Gerenciar acessos e perfis do sistema</span>
+    </div>
 
-            <form id="userForm" class="grid-form three">
-              <label>Usuário
-                <input id="newUsername" type="text" />
-              </label>
+    <span class="panel-collapse-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+  </button>
 
-              <label>Senha
-                <input id="newPassword" type="text" />
-              </label>
+  <div id="usersPanelContent" class="panel-collapse-content">
+    <form id="userForm" class="grid-form three">
+      <label>Usuário
+        <input id="newUsername" type="text" />
+      </label>
 
-              <label>Perfil
-                <select id="newRole">
-                  <option value="professor">Colaborador</option>
-                  <option value="gestao">Gestão</option>
-                  <option value="supervisao">Supervisão</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </label>
+      <label>Senha
+        <input id="newPassword" type="text" />
+      </label>
 
-              <label>Núcleo (colaborador)
-                <select id="newNucleus"></select>
-              </label>
+      <label>Perfil
+        <select id="newRole">
+          <option value="professor">Colaborador</option>
+          <option value="gestao">Gestão</option>
+          <option value="supervisao">Supervisão</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
 
-              <button type="submit" class="primary">Criar usuário</button>
-            </form>
+      <label>Núcleo (colaborador)
+        <select id="newNucleus"></select>
+      </label>
 
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Usuário</th>
-                    <th>Perfil</th>
-                    <th>Núcleo</th>
-                    <th>Senha</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="usersTableBody"></tbody>
-              </table>
-            </div>
-          </section>
+      <button type="submit" class="primary">Criar usuário</button>
+    </form>
 
-          <section class="panel">
-            <div class="panel-title-row">
-              <h2>Momento do Mestre (Admin)</h2>
-            </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Perfil</th>
+            <th>Núcleo</th>
+            <th>Senha</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+          <section class="panel collapsible-panel is-open" id="adminMestrePanel">
+  <button type="button" class="panel-collapse-toggle" id="adminMestreToggle" aria-expanded="true" aria-controls="adminMestreContent">
+    <div class="panel-collapse-head">
+      <h2>Momento do Mestre (Admin)</h2>
+      <span class="panel-collapse-sub">Gerenciar PDFs por tema</span>
+    </div>
 
-            <div class="grid-form two">
-              <label>Tema
-                <select id="adminMestreTheme">
-                  <option value="disciplina">Disciplina</option>
-                  <option value="respeito">Respeito</option>
-                  <option value="trabalho_em_equipe">Trabalho em equipe</option>
-                  <option value="amor">Amor</option>
-                  <option value="meio_ambiente">Meio ambiente</option>
-                  <option value="cultura">Cultura</option>
-                  <option value="saude_autocuidado">Saúde e autocuidado</option>
-                  <option value="projeto_de_vida">Projeto de vida</option>
-                  <option value="esporte_movimento">Esporte e movimento</option>
-                  <option value="artes_criatividade">Artes e criatividade</option>
-                  <option value="educacao_emocional">Educação emocional</option>
-                  <option value="leitura_letramento">Leitura e letramento</option>
-                </select>
-              </label>
+    <span class="panel-collapse-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+  </button>
 
-              <label>Arquivo PDF
-                <input id="adminMestreFile" type="file" accept=".pdf" />
-              </label>
-            </div>
+  <div id="adminMestreContent" class="panel-collapse-content">
+    <div class="grid-form two">
+      <label>Tema
+        <select id="adminMestreTheme">
+          <option value="disciplina">Disciplina</option>
+          <option value="respeito">Respeito</option>
+          <option value="trabalho_em_equipe">Trabalho em equipe</option>
+          <option value="amor">Amor</option>
+          <option value="meio_ambiente">Meio ambiente</option>
+          <option value="cultura">Cultura</option>
+          <option value="saude_autocuidado">Saúde e autocuidado</option>
+          <option value="projeto_de_vida">Projeto de vida</option>
+          <option value="esporte_movimento">Esporte e movimento</option>
+          <option value="artes_criatividade">Artes e criatividade</option>
+          <option value="educacao_emocional">Educação emocional</option>
+          <option value="leitura_letramento">Leitura e letramento</option>
+        </select>
+      </label>
 
-            <div class="toolbar">
-              <button id="adminMestreSave" type="button" class="primary">Salvar PDF do tema</button>
-            </div>
+      <label>Arquivo PDF
+        <input id="adminMestreFile" type="file" accept=".pdf" />
+      </label>
+    </div>
 
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tema</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="adminMestreTableBody"></tbody>
-              </table>
-            </div>
-          </section>
+    <div class="toolbar">
+      <button id="adminMestreSave" type="button" class="primary">Salvar PDF do tema</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tema</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="adminMestreTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
           <!-- Painéis extras entram por JS -->
 

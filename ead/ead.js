@@ -117,16 +117,20 @@ function buildCourses(projectKey, userId) {
   const lessonsByCourse = {};
   courses.forEach((c) => {
     const cat = c.category;
-    lessonsByCourse[c.id] = byCat[cat].slice().sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"pt-BR")).map((l, idx) => ({
-      id: l.id,
-      title: l.title || `Aula ${idx+1}`,
-      duration: l.level ? String(l.level) : "",
-      embedUrl: l.embedUrl || "",
-      provider: l.provider || "",
-      completed: !!userProg.completed?.[l.id],
-      order: idx + 1,
-      desc: l.desc || "",
-    }));
+    lessonsByCourse[c.id] = byCat[cat]
+  .slice()
+  .sort((a,b)=>String(a.title||"").localeCompare(String(b.title||""),"pt-BR"))
+  .map((l, idx) => ({
+    id: l.id,
+    title: l.title || `Aula ${idx + 1}`,
+    duration: l.level ? String(l.level) : "",
+    embedUrl: l.embedUrl || "",
+    provider: l.provider || "",
+    completed: !!userProg.completed?.[l.id],
+    order: idx + 1,
+    desc: l.desc || "",
+    extra: l.extra || ""
+  }));
   });
 
   return { courses, lessonsByCourse };
@@ -237,6 +241,42 @@ function renderHome(ctx) {
   });
 }
 
+function buildLessonTabsHTML(currentLesson) {
+  const descriptionText = (currentLesson?.desc || "").trim();
+  const extraText = (currentLesson?.extra || "").trim();
+
+  const safeDescription = descriptionText
+    ? escapeHtml(descriptionText).replace(/\n/g, "<br>")
+    : "Sem descrição para esta aula.";
+
+  const safeExtra = extraText
+    ? escapeHtml(extraText).replace(/\n/g, "<br>")
+    : "Sem informações extras para esta aula.";
+
+  return `
+    <div class="ead-detail-tabs">
+      <div class="ead-detail-tab-buttons">
+        <button type="button" class="ead-detail-tab-btn active" data-ead-tab="desc">Descrição</button>
+        <button type="button" class="ead-detail-tab-btn" data-ead-tab="extra">Extras</button>
+      </div>
+
+      <div class="ead-detail-tab-panels">
+        <div class="ead-detail-tab-panel active" data-ead-panel="desc">
+          <div class="ead-detail-box">
+            ${safeDescription}
+          </div>
+        </div>
+
+        <div class="ead-detail-tab-panel" data-ead-panel="extra">
+          <div class="ead-detail-box">
+            ${safeExtra}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderCoursePage(ctx, courseId) {
   const app = getEadApp();
   if (!app) return;
@@ -274,35 +314,43 @@ function renderCoursePage(ctx, courseId) {
     `;
   }).join("");
 
-  const videoHTML = currentLesson?.embedUrl ? `
-    <div class="video-player">
-      <iframe class="video-frame" src="${escapeHtml(currentLesson.embedUrl)}"
-        allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
-    </div>
-    <div class="video-info">
-      <h2>${escapeHtml(currentLesson.title)}</h2>
-      <p>${escapeHtml(course.title)} · Aula ${currentLesson.order}${currentLesson.desc ? " · " + escapeHtml(currentLesson.desc) : ""}</p>
-      <button type="button" class="mark-done" data-mark-done>
-        ${icons.check} Marcar como concluída
-      </button>
-    </div>
-  ` : `
-    <div class="video-player">
-      <div class="video-empty">
-        <div>
-          <div style="opacity:.9;margin-bottom:8px">${icons.play}</div>
-          <div style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.1em">
-            Aula sem vídeo
-          </div>
-          <div style="margin-top:6px">Peça ao Admin para cadastrar um link do YouTube/Drive.</div>
+  const lessonTabsHTML = buildLessonTabsHTML(currentLesson);
+
+const videoHTML = currentLesson?.embedUrl ? `
+  <div class="video-player">
+    <iframe class="video-frame" src="${escapeHtml(currentLesson.embedUrl)}"
+      allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+  </div>
+
+  <div class="video-info">
+    <h2>${escapeHtml(currentLesson.title)}</h2>
+    <p>${escapeHtml(course.title)} · Aula ${currentLesson.order}${currentLesson.desc ? " · " + escapeHtml(currentLesson.desc) : ""}</p>
+    <button type="button" class="mark-done" data-mark-done>
+      ${icons.check} Marcar como concluída
+    </button>
+  </div>
+
+  ${lessonTabsHTML}
+` : `
+  <div class="video-player">
+    <div class="video-empty">
+      <div>
+        <div style="opacity:.9;margin-bottom:8px">${icons.play}</div>
+        <div style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.1em">
+          Aula sem vídeo
         </div>
+        <div style="margin-top:6px">Peça ao Admin para cadastrar um link do YouTube/Drive.</div>
       </div>
     </div>
-    <div class="video-info">
-      <h2>${escapeHtml(currentLesson?.title || "Selecione uma aula")}</h2>
-      <p>${escapeHtml(course.title)} · Aula ${currentLesson?.order || "-"}</p>
-    </div>
-  `;
+  </div>
+
+  <div class="video-info">
+    <h2>${escapeHtml(currentLesson?.title || "Selecione uma aula")}</h2>
+    <p>${escapeHtml(course.title)} · Aula ${currentLesson?.order || "-"}</p>
+  </div>
+
+  ${lessonTabsHTML}
+`;
 
   app.innerHTML = `
     <header class="course-header">
@@ -336,18 +384,32 @@ function renderCoursePage(ctx, courseId) {
   // binds
   app.querySelector("[data-go-home]")?.addEventListener("click", () => goHome(ctx));
 
-  app.querySelectorAll("[data-lesson]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      currentLessonId = btn.getAttribute("data-lesson");
-      renderCoursePage(ctx, courseId);
-      window.scrollTo(0, 0);
+app.querySelectorAll("[data-lesson]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    currentLessonId = btn.getAttribute("data-lesson");
+    renderCoursePage(ctx, courseId);
+    window.scrollTo(0, 0);
+  });
+});
+
+app.querySelector("[data-mark-done]")?.addEventListener("click", () => {
+  if (!currentLesson) return;
+  markLessonDone(ctx, currentLesson.id);
+});
+
+app.querySelectorAll("[data-ead-tab]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const tab = btn.getAttribute("data-ead-tab");
+
+    app.querySelectorAll("[data-ead-tab]").forEach((b) => {
+      b.classList.toggle("active", b.getAttribute("data-ead-tab") === tab);
+    });
+
+    app.querySelectorAll("[data-ead-panel]").forEach((panel) => {
+      panel.classList.toggle("active", panel.getAttribute("data-ead-panel") === tab);
     });
   });
-
-  app.querySelector("[data-mark-done]")?.addEventListener("click", () => {
-    if (!currentLesson) return;
-    markLessonDone(ctx, currentLesson.id);
-  });
+});
 }
 
 function markLessonDone(ctx, lessonId) {

@@ -422,11 +422,9 @@ tabPages: [
   nucleusCountBadge: el("nucleusCountBadge"),
   dashNucleusFilter: el("dashNucleusFilter"),
   dashChart: el("dashChart"),
-  dashMiniChart: el("dashMiniChart"),
-  dashMiniBadge: el("dashMiniBadge"),
-  dashShowFixed: el("dashShowFixed"),
-  dashShowVisitors: el("dashShowVisitors"),
-  dashShowPCD: el("dashShowPCD"),
+  dashFixedValue: el("dashFixedValue"),
+  dashVisitorsValue: el("dashVisitorsValue"),
+  dashPCDValue: el("dashPCDValue"),
 
   // professor
   professorNucleusBadge: el("professorNucleusBadge"),
@@ -630,6 +628,7 @@ function init() {
   enhanceFormsAndTheme();
 
   bindEvents();
+  bindCollapsiblePanels();
   initFilaAdmin();
   render();
   updateReportRangeInfo();
@@ -1804,14 +1803,18 @@ function ensureAdminExtraPanels() {
         </label>
 
         <label>Descrição (opcional)
-          <textarea id="lessonDesc" rows="3" placeholder="Breve descrição / objetivos da aula"></textarea>
-        </label>
+  <textarea id="lessonDesc" rows="3" placeholder="Breve descrição / objetivos da aula"></textarea>
+</label>
 
-        <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
-          <button type="submit" class="primary">Salvar aula</button>
-          <button type="button" id="lessonClear" class="ghost">Limpar</button>
-          <span id="lessonStatus" class="report-status">Cadastre aulas para aparecerem na plataforma.</span>
-        </div>
+<label>Extras (opcional)
+  <textarea id="lessonExtra" rows="3" placeholder="Materiais, orientações, observações e informações complementares da aula"></textarea>
+</label>
+
+<div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+  <button type="submit" class="primary">Salvar aula</button>
+  <button type="button" id="lessonClear" class="ghost">Limpar</button>
+  <span id="lessonStatus" class="report-status">Cadastre aulas para aparecerem na plataforma.</span>
+</div>
       </form>
 
       <div class="table-wrapper" style="margin-top:10px">
@@ -2047,13 +2050,52 @@ function openLesson(lessonId) {
 
   if (ui.aulaPlayer) {
     ui.aulaPlayer.innerHTML = `
-      <iframe
-        src="${lesson.embedUrl}"
-        style="width:100%; height:420px; border:0; border-radius:12px;"
-        allow="autoplay; encrypted-media; picture-in-picture"
-        allowfullscreen
-      ></iframe>
+      <div class="aula-player-tabs">
+        <div class="aula-video-wrap">
+          <iframe
+            src="${lesson.embedUrl}"
+            style="width:100%; height:420px; border:0; border-radius:12px;"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+
+        <div class="aula-detail-tabs">
+          <div class="aula-detail-tab-buttons">
+            <button type="button" class="aula-detail-tab-btn active" data-tab-target="desc">Descrição</button>
+            <button type="button" class="aula-detail-tab-btn" data-tab-target="extra">Extras</button>
+          </div>
+
+          <div class="aula-detail-tab-panels">
+            <div class="aula-detail-tab-panel active" data-tab-panel="desc">
+              ${(lesson.desc || "").trim()
+                ? escapeHtml(lesson.desc).replace(/\n/g, "<br>")
+                : "Sem descrição para esta aula."}
+            </div>
+
+            <div class="aula-detail-tab-panel" data-tab-panel="extra">
+              ${(lesson.extra || "").trim()
+                ? escapeHtml(lesson.extra).replace(/\n/g, "<br>")
+                : "Sem informações extras para esta aula."}
+            </div>
+          </div>
+        </div>
+      </div>
     `;
+
+    ui.aulaPlayer.querySelectorAll("[data-tab-target]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-tab-target");
+
+        ui.aulaPlayer.querySelectorAll("[data-tab-target]").forEach((b) => {
+          b.classList.toggle("active", b.getAttribute("data-tab-target") === target);
+        });
+
+        ui.aulaPlayer.querySelectorAll("[data-tab-panel]").forEach((panel) => {
+          panel.classList.toggle("active", panel.getAttribute("data-tab-panel") === target);
+        });
+      });
+    });
   }
 
   if (ui.aulaMetaBadge) {
@@ -2224,43 +2266,45 @@ ui.snackTodayBtn?.addEventListener("click", () => {
 
   // ✅ AULAS: admin cadastro
   el("adminLessonForm")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const status = el("lessonStatus");
+  e.preventDefault();
+  const status = el("lessonStatus");
 
-    const title = el("lessonTitle")?.value?.trim() || "";
-    const category = el("lessonCategory")?.value || "";
-    const level = el("lessonLevel")?.value || "";
-    const url = el("lessonUrl")?.value || "";
-    const desc = el("lessonDesc")?.value?.trim() || "";
+  const title = el("lessonTitle")?.value?.trim() || "";
+  const category = el("lessonCategory")?.value || "";
+  const level = el("lessonLevel")?.value || "";
+  const url = el("lessonUrl")?.value || "";
+  const desc = el("lessonDesc")?.value?.trim() || "";
+  const extra = el("lessonExtra")?.value?.trim() || "";
 
-    const parsed = normalizeVideoUrl(url);
-    if (!parsed.ok) {
-      if (status) status.textContent = parsed.error;
-      return;
-    }
+  const parsed = normalizeVideoUrl(url);
+  if (!parsed.ok) {
+    if (status) status.textContent = parsed.error;
+    return;
+  }
 
-    const lesson = {
-      id: crypto.randomUUID(),
-      title,
-      category,
-      level,
-      desc,
-      provider: parsed.provider,
-      embedUrl: parsed.embedUrl,
-      thumb: parsed.thumb,
-      createdAt: new Date().toISOString(),
-      project: state.currentProjectKey,
-    };
+  const lesson = {
+  id: crypto.randomUUID(),
+  title,
+  category,
+  level,
+  desc,
+  extra,
+  provider: parsed.provider,
+  embedUrl: parsed.embedUrl,
+  thumb: parsed.thumb,
+  createdAt: new Date().toISOString(),
+  project: state.currentProjectKey,
+};
 
-    ensureLessonsBag().unshift(lesson);
-    persist();
+  ensureLessonsBag().unshift(lesson);
+  persist();
 
-    if (status) status.textContent = "Aula salva ✅";
-    e.target.reset();
+  if (status) status.textContent = "Aula salva ✅";
+  e.target.reset();
 
-    renderAdminLessonsTable();
-    renderLessonsGrid();
-  });
+  renderAdminLessonsTable();
+  renderLessonsGrid();
+});
 
   el("lessonClear")?.addEventListener("click", () => {
     el("adminLessonForm")?.reset();
@@ -2394,11 +2438,6 @@ ui.snackTodayBtn?.addEventListener("click", () => {
   ui.pdfModal?.addEventListener("click", (e) => {
     if (e.target === ui.pdfModal) closePdfModal();
   });
-
-  // Dashboard mini chart
-  [ui.dashShowFixed, ui.dashShowVisitors, ui.dashShowPCD].forEach((n) =>
-    n?.addEventListener("change", renderDashboardMiniChart)
-  );
 
   ui.dashNucleusFilter?.addEventListener("change", renderDashboardChart);
 
@@ -3211,9 +3250,33 @@ function fitCanvasToCSS(canvas, minH = 260) {
   return { ctx, w, h };
 }
 
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  if (typeof radius === "number") {
+    radius = { tl: radius, tr: radius, br: radius, bl: radius };
+  } else {
+    radius = { tl: 0, tr: 0, br: 0, bl: 0, ...radius };
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(x + radius.tl, y);
+  ctx.lineTo(x + width - radius.tr, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+  ctx.lineTo(x + width, y + height - radius.br);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+  ctx.lineTo(x + radius.bl, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+  ctx.lineTo(x, y + radius.tl);
+  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+  ctx.closePath();
+
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
 function renderDashboardChart() {
   const canvas = ui.dashChart;
   if (!canvas) return;
+
   const fit = fitCanvasToCSS(canvas, 320);
   if (!fit) return;
   const { ctx, w, h } = fit;
@@ -3235,61 +3298,131 @@ function renderDashboardChart() {
 
   ctx.clearRect(0, 0, w, h);
 
-  const pad = 42;
-  const chartW = w - pad * 2;
-  const chartH = h - pad * 2;
+  const padTop = 26;
+  const padRight = 26;
+  const padBottom = 64;
+  const padLeft = 58;
 
-  // eixos
-  ctx.strokeStyle = "#cfcfd4";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pad, pad);
-  ctx.lineTo(pad, pad + chartH);
-  ctx.lineTo(pad + chartW, pad + chartH);
-  ctx.stroke();
+  const chartW = w - padLeft - padRight;
+  const chartH = h - padTop - padBottom;
+
+  if (chartW <= 0 || chartH <= 0) return;
 
   const max = Math.max(1, ...data.map((d) => d.total));
-  const step = chartW / Math.max(1, data.length);
-  const barW = Math.max(28, step * 0.55);
+
+  /* fundo interno suave */
+  const bg = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
+  bg.addColorStop(0, "#fbfdff");
+  bg.addColorStop(1, "#f3f8fe");
+  ctx.fillStyle = bg;
+  ctx.fillRect(padLeft, padTop, chartW, chartH);
+
+  /* grid horizontal */
+  ctx.strokeStyle = "rgba(157, 176, 205, 0.26)";
+  ctx.lineWidth = 1;
+  const gridLines = 5;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = padTop + (chartH / gridLines) * i;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, y);
+    ctx.lineTo(padLeft + chartW, y);
+    ctx.stroke();
+  }
+
+  /* eixo Y */
+  ctx.fillStyle = "#4c6488";
+  ctx.font = "600 12px Inter, Arial, sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+
+  for (let i = 0; i <= gridLines; i++) {
+    const value = Math.round(max - (max / gridLines) * i);
+    const y = padTop + (chartH / gridLines) * i;
+    ctx.fillText(String(value), padLeft - 10, y);
+  }
+
+  /* eixos */
+  ctx.strokeStyle = "#aebdd4";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(padLeft, padTop);
+  ctx.lineTo(padLeft, padTop + chartH);
+  ctx.lineTo(padLeft + chartW, padTop + chartH);
+  ctx.stroke();
+
+  if (!data.length) return;
+
+  const step = chartW / data.length;
+  const barW = Math.min(92, Math.max(42, step * 0.34));
 
   data.forEach((d, i) => {
-    const x = pad + i * step + (step - barW) / 2;
-    let topY = pad + chartH;
+    const x = padLeft + i * step + (step - barW) / 2;
+    let topY = padTop + chartH;
 
     const segs = [
-      { v: d.presente, color: "#1f8a57" },
-      { v: d.justificado, color: "#2c3f8f" },
-      { v: d.falta, color: "#b31d2f" },
-      { v: d.sa, color: "#888888" },
+      { v: d.presente, color: "#2f9e62" },
+      { v: d.justificado, color: "#3f63c9" },
+      { v: d.falta, color: "#c02d3e" },
+      { v: d.sa, color: "#8c97aa" },
     ];
+
+    let totalBarHeight = 0;
 
     segs.forEach((seg) => {
       const hh = (seg.v / max) * chartH;
       if (hh <= 0) return;
+
       topY -= hh;
+      totalBarHeight += hh;
+
       ctx.fillStyle = seg.color;
       ctx.fillRect(x, topY, barW, hh);
     });
 
-    // borda
-    ctx.strokeStyle = "#d9d9de";
-    ctx.strokeRect(x, pad + chartH - (d.total / max) * chartH, barW, (d.total / max) * chartH);
+    /* borda do conjunto */
+    if (totalBarHeight > 0) {
+      ctx.strokeStyle = "rgba(124, 145, 176, 0.38)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        x,
+        padTop + chartH - totalBarHeight,
+        barW,
+        totalBarHeight
+      );
+    }
 
-    // rótulos
-    ctx.fillStyle = "#222";
-    ctx.font = "12px Arial";
-    const short = d.nucleus.length > 11 ? d.nucleus.slice(0, 11) + "…" : d.nucleus;
-    ctx.fillText(short, x - 4, pad + chartH + 16);
-
+    /* badge do percentual */
     const pct = d.total ? Math.round(((d.presente + d.justificado) / d.total) * 100) : 0;
-    ctx.fillStyle = "#555";
-    ctx.fillText(`${pct}%`, x + 2, Math.max(14, pad + chartH - (d.total / max) * chartH - 6));
+    const badgeY = Math.max(18, padTop + chartH - totalBarHeight - 18);
+
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, x + barW / 2 - 18, badgeY, 36, 18, 9, true, false);
+
+    ctx.strokeStyle = "rgba(156, 172, 197, 0.55)";
+    roundRect(ctx, x + barW / 2 - 18, badgeY, 36, 18, 9, false, true);
+
+    ctx.fillStyle = "#203657";
+    ctx.font = "700 11px Inter, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${pct}%`, x + barW / 2, badgeY + 9);
+
+    /* nome do núcleo */
+    ctx.fillStyle = "#173356";
+    ctx.font = "700 12px Inter, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    let label = d.nucleus || "";
+    if (label.length > 12) label = label.slice(0, 12) + "…";
+    ctx.fillText(label, x + barW / 2, padTop + chartH + 12);
   });
 }
 
 function renderDashboardMiniChart() {
   const canvas = ui.dashMiniChart;
   if (!canvas) return;
+
   const fit = fitCanvasToCSS(canvas, 240);
   if (!fit) return;
 
@@ -3303,8 +3436,9 @@ function renderDashboardMiniChart() {
   const students = getProjectStudents();
   const visitors = getProjectVisitors();
 
-  // "fixos" = quem tem 5+ registros no attendanceLog
-  const fixedCount = students.filter((s) => ensureAttendanceLog(s).filter((x) => x.project === state.currentProjectKey).length >= 5).length;
+  const fixedCount = students.filter(
+    (s) => ensureAttendanceLog(s).filter((x) => x.project === state.currentProjectKey).length >= 5
+  ).length;
   const visitorCount = visitors.length;
   const pcdCount = students.filter((s) => !!s.pcd).length;
 
@@ -3318,50 +3452,77 @@ function renderDashboardMiniChart() {
     return;
   }
 
-  // gráfico de LINHA (como você pediu)
-  const pad = 36;
-  const chartW = w - pad * 2;
-  const chartH = h - pad * 2;
+  const padTop = 28;
+  const padRight = 28;
+  const padBottom = 48;
+  const padLeft = 52;
+
+  const chartW = w - padLeft - padRight;
+  const chartH = h - padTop - padBottom;
   const max = Math.max(1, ...series.map((s) => s.value));
 
-  // eixos
-  ctx.strokeStyle = "#cfcfd4";
+  /* fundo */
+  const bg = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
+  bg.addColorStop(0, "#fbfdff");
+  bg.addColorStop(1, "#f3f8fd");
+  ctx.fillStyle = bg;
+  ctx.fillRect(padLeft, padTop, chartW, chartH);
+
+  /* linhas */
+  ctx.strokeStyle = "rgba(160, 178, 205, 0.22)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padTop + (chartH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, y);
+    ctx.lineTo(padLeft + chartW, y);
+    ctx.stroke();
+  }
+
+  /* eixos */
+  ctx.strokeStyle = "#aebdd4";
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.moveTo(pad, pad);
-  ctx.lineTo(pad, pad + chartH);
-  ctx.lineTo(pad + chartW, pad + chartH);
+  ctx.moveTo(padLeft, padTop);
+  ctx.lineTo(padLeft, padTop + chartH);
+  ctx.lineTo(padLeft + chartW, padTop + chartH);
   ctx.stroke();
 
   const step = series.length > 1 ? chartW / (series.length - 1) : 0;
 
-  // linha
-  ctx.strokeStyle = "#8f1422";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#b21a2b";
+  ctx.lineWidth = 2.2;
   ctx.beginPath();
 
   series.forEach((s, i) => {
-    const x = pad + i * step;
-    const y = pad + chartH - (s.value / max) * chartH;
+    const x = padLeft + i * step;
+    const y = padTop + chartH - (s.value / max) * chartH;
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
+
   ctx.stroke();
 
-  // pontos + labels
   series.forEach((s, i) => {
-    const x = pad + i * step;
-    const y = pad + chartH - (s.value / max) * chartH;
+    const x = padLeft + i * step;
+    const y = padTop + chartH - (s.value / max) * chartH;
 
-    ctx.fillStyle = "#8f1422";
+    ctx.fillStyle = "#b21a2b";
     ctx.beginPath();
-    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.arc(x, y, 4.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#222";
-    ctx.font = "12px Arial";
-    ctx.fillText(s.label, x - 18, pad + chartH + 16);
-    ctx.fillStyle = "#555";
-    ctx.fillText(String(s.value), x - 6, y - 8);
+    ctx.fillStyle = "#173356";
+    ctx.font = "700 12px Inter, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(s.label, x, padTop + chartH + 8);
+
+    ctx.fillStyle = "#203657";
+    ctx.font = "700 11px Inter, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(String(s.value), x, y - 8);
   });
 
   if (ui.dashMiniBadge) {
@@ -4621,26 +4782,44 @@ if (user.role === "admin" && !["tab-dashboard", "tab-gestao", "tab-estoque", "ta
   if (ui.dashBadge) ui.dashBadge.textContent = `${getProjectStudents().length} alunos`;
 
   // admin config sync
-  const adminGroupInput = el("adminWhatsGroupLink");
-  if (adminGroupInput) adminGroupInput.value = ensureProjectSettings().whatsappGroupLink || "";
+const adminGroupInput = el("adminWhatsGroupLink");
+if (adminGroupInput) adminGroupInput.value = ensureProjectSettings().whatsappGroupLink || "";
 
-  ensureDashNucleusOptions();
-  renderMetrics();
-  renderNucleusCounts();
-  renderVisitors();
-  renderClassDays();
-  renderAttendanceReport();
-  hydrateGestaoAlunoFiltroNucleo();
-  renderListaAlunosGestao();
-  renderUniformTable();
-  renderStock();
-  renderAlerts();
-  renderSnackStockTab();
-  hydrateWhatsStudents();
-  renderDashboardChart();
-  renderDashboardMiniChart();
+ensureDashNucleusOptions();
+renderMetrics();
+renderNucleusCounts();
+renderVisitors();
+renderClassDays();
+renderAttendanceReport();
+hydrateGestaoAlunoFiltroNucleo();
+renderListaAlunosGestao();
+renderUniformTable();
+renderStock();
+renderAlerts();
+renderSnackStockTab();
+hydrateWhatsStudents();
+renderDashboardChart();
+renderDashboardMiniChart();
+
+if (state.activeTab === "tab-admin") {
+  ensureAdminExtraPanels();
   renderAdminMestreTable();
-  hydrateSupervisaoNucleo();
+  bindCollapsiblePanels();
+
+  requestAnimationFrame(() => {
+    const mestrePanel = document.getElementById("adminMestrePanel");
+    const mestreToggle = document.getElementById("adminMestreToggle");
+
+    if (mestrePanel && mestreToggle) {
+      mestrePanel.classList.add("is-open");
+      mestreToggle.setAttribute("aria-expanded", "true");
+    }
+  });
+} else {
+  renderAdminMestreTable();
+}
+
+hydrateSupervisaoNucleo();
 
 if (user.role === "professor") renderProfessorArea(user);
 if (user.role === "admin") renderUsersTable();
@@ -4946,3 +5125,24 @@ document.addEventListener("click", (e) => {
     loadFilaAdmin();
   }
 });
+
+function bindCollapsiblePanels() {
+  const pairs = [
+    { toggleId: "adminMestreToggle", panelId: "adminMestrePanel" },
+    { toggleId: "usersPanelToggle", panelId: "usersPanel" }
+  ];
+
+  pairs.forEach(({ toggleId, panelId }) => {
+    const toggle = document.getElementById(toggleId);
+    const panel = document.getElementById(panelId);
+
+    if (!toggle || !panel || toggle.dataset.bound === "1") return;
+
+    toggle.dataset.bound = "1";
+
+    toggle.addEventListener("click", () => {
+      const isOpen = panel.classList.toggle("is-open");
+      toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+  });
+}

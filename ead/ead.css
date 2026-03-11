@@ -437,3 +437,73 @@
   animation: eadFadeIn 0.5s ease-out forwards;
   opacity: 0;
 }
+
+/* ===== DESCRIÇÃO / EXTRAS DA AULA ===== */
+
+.ead-detail-tabs {
+  margin-top: 18px;
+}
+
+.ead-detail-tab-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+
+.ead-detail-tab-btn {
+  border: 1px solid rgba(190, 202, 220, 0.9);
+  background: linear-gradient(180deg, #ffffff 0%, #eef3f8 100%);
+  color: #23395d;
+  border-radius: 14px 14px 0 0;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.ead-detail-tab-btn.active {
+  background: #ffffff;
+  color: #8f1422;
+  border-color: rgba(143, 20, 34, 0.18);
+  box-shadow: inset 0 2px 0 #8f1422;
+}
+
+.ead-detail-tab-panels {
+  border-top: 2px solid rgba(143, 20, 34, 0.9);
+  background: #ffffff;
+}
+
+.ead-detail-tab-panel {
+  display: none;
+}
+
+.ead-detail-tab-panel.active {
+  display: block;
+}
+
+.ead-detail-box {
+  padding: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+  color: #1f2d42;
+  line-height: 1.7;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.ead-detail-box br {
+  content: "";
+}
+
+@media (max-width: 700px) {
+  .ead-detail-tab-btn {
+    padding: 9px 14px;
+    font-size: 0.88rem;
+  }
+
+  .ead-detail-box {
+    padding: 16px;
+    font-size: 0.94rem;
+    line-height: 1.6;
+  }
+}
