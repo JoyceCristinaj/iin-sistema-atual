@@ -99,18 +99,17 @@
       <!-- ABAS -->
       <div class="tabs-wrap">
         <div class="container">
-        <nav id="tabsBar" class="tabs-bar">
-          <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
-          <button class="tab-btn" data-tab="tab-chamada">Chamada</button>
-          <button class="tab-btn" data-tab="tab-professor">Colaborador</button>
-          <button class="tab-btn" data-tab="tab-aulas">Aulas</button>
-          <button class="tab-btn" data-tab="tab-gestao">Gestão</button>
-          <button class="tab-btn" data-tab="tab-estoque">Estoque</button>
-          <button class="tab-btn" data-tab="tab-relatorios">Relatórios</button>
-          <button class="tab-btn" data-tab="tab-admin">Admin</button>
-          <button class="tab-btn" data-tab="tab-fila">Fila de espera</button>
-          <button class="tab-btn" data-tab="tab-supervisao">Supervisão</button>
-        </nav>
+          <nav id="tabsBar" class="tabs-bar">
+            <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="tab-chamada">Chamada</button>
+            <button class="tab-btn" data-tab="tab-professor">Colaborador</button>
+            <button class="tab-btn" data-tab="tab-aulas">Aulas</button>
+            <button class="tab-btn" data-tab="tab-gestao">Gestão</button>
+            <button class="tab-btn" data-tab="tab-estoque">Estoque</button>
+            <button class="tab-btn" data-tab="tab-relatorios">Relatórios</button>
+            <button class="tab-btn" data-tab="tab-admin">Admin</button>
+            <button class="tab-btn" data-tab="tab-fila">Fila de espera</button>
+            <button class="tab-btn" data-tab="tab-supervisao">Supervisão</button>
           </nav>
         </div>
       </div>
@@ -121,7 +120,7 @@
 
       <!-- DASHBOARD -->
       <section id="tab-dashboard" class="tab-page">
-        <div class="panel-grid four">
+        <div class="panel-grid four dashboard-metrics">
           <article class="metric-card">
             <p>Total alunos</p>
             <h3 id="totalStudents">0</h3>
@@ -340,7 +339,7 @@
         </section>
       </section>
 
-      <!-- AULAS (EAD v2) -->
+      <!-- AULAS -->
       <section id="tab-aulas" class="tab-page hidden">
         <section class="panel">
           <div class="panel-title-row">
@@ -574,107 +573,109 @@
 
           <section class="panel">
             <div class="panel-title-row">
-              <h2>Tabela de uniforme / kit</h2>
+              <h2>Alunos cadastrados</h2>
+              <span class="badge" id="gestaoAlunosBadge">0</span>
             </div>
 
-            <div class="toolbar">
-              <label>Núcleo
-                <select id="uniformNucleusFilter"></select>
-              </label>
+            <div class="toolbar" style="gap:10px; flex-wrap:wrap;">
+              <input
+                id="gestaoAlunoBusca"
+                type="text"
+                placeholder="Buscar por nome, núcleo, modalidade ou responsável"
+                style="max-width:320px"
+              />
+
+              <select id="gestaoAlunoFiltroNucleo">
+                <option value="todos">Todos os núcleos</option>
+              </select>
+
+              <select id="gestaoAlunoFiltroModalidade">
+                <option value="todos">Todas as modalidades</option>
+                <option value="Boxe">Boxe</option>
+                <option value="Muay Thai">Muay Thai</option>
+                <option value="Jiu Jitso">Jiu Jitso</option>
+              </select>
             </div>
 
-            <div class="table-wrapper">
+            <div class="table-wrapper" style="margin-top:12px;">
               <table>
                 <thead>
                   <tr>
                     <th>Aluno</th>
                     <th>Núcleo</th>
                     <th>Modalidade</th>
-                    <th>Itens permitidos</th>
-                    <th>Entrega</th>
-                    <th>Ação</th>
-                    <th>Excluir</th>
+                    <th>Horário</th>
+                    <th>Responsável</th>
+                    <th>Contato</th>
                   </tr>
                 </thead>
-                <tbody id="uniformTableBody"></tbody>
+                <tbody id="gestaoAlunosTableBody"></tbody>
               </table>
             </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-title-row">
-              <h2>Estoque</h2>
-            </div>
-
-            <form id="stockForm" class="grid-form two">
-              <label>Item
-                <select id="stockSize">
-                  <option value="camiseta">Camiseta</option>
-                  <option value="shorts">Shorts</option>
-                  <option value="kimono">Kimono</option>
-                  <option value="bandagem">Bandagem</option>
-                  <option value="protetor_bucal">Protetor bucal</option>
-                </select>
-              </label>
-              <label>Ajuste (+/-)
-                <input id="stockDelta" type="number" value="1" />
-              </label>
-
-              <button type="submit" class="primary">Ajustar estoque</button>
-            </form>
-
-            <div id="stockView" class="cards-grid"></div>
           </section>
 
         </div>
       </section>
 
-<section class="panel">
-  <div class="panel-title-row">
-    <h2>Alunos cadastrados</h2>
-    <span class="badge" id="gestaoAlunosBadge">0</span>
-  </div>
-
-  <div class="toolbar" style="gap:10px; flex-wrap:wrap;">
-    <input
-      id="gestaoAlunoBusca"
-      type="text"
-      placeholder="Buscar por nome, núcleo, modalidade ou responsável"
-      style="max-width:320px"
-    />
-
-    <select id="gestaoAlunoFiltroNucleo">
-      <option value="todos">Todos os núcleos</option>
-    </select>
-
-    <select id="gestaoAlunoFiltroModalidade">
-      <option value="todos">Todas as modalidades</option>
-      <option value="Boxe">Boxe</option>
-      <option value="Muay Thai">Muay Thai</option>
-      <option value="Jiu Jitso">Jiu Jitso</option>
-    </select>
-  </div>
-
-  <div class="table-wrapper" style="margin-top:12px;">
-    <table>
-      <thead>
-        <tr>
-          <th>Aluno</th>
-          <th>Núcleo</th>
-          <th>Modalidade</th>
-          <th>Horário</th>
-          <th>Responsável</th>
-          <th>Contato</th>
-        </tr>
-      </thead>
-      <tbody id="gestaoAlunosTableBody"></tbody>
-    </table>
-  </div>
-</section>
-
-      <!-- ESTOQUE (LANCHES) -->
+      <!-- ESTOQUE -->
       <section id="tab-estoque" class="tab-page hidden">
+
         <section class="panel">
+          <div class="panel-title-row">
+            <h2>Tabela de uniforme / kit</h2>
+          </div>
+
+          <div class="toolbar">
+            <label>Núcleo
+              <select id="uniformNucleusFilter"></select>
+            </label>
+          </div>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Aluno</th>
+                  <th>Núcleo</th>
+                  <th>Modalidade</th>
+                  <th>Itens permitidos</th>
+                  <th>Entrega</th>
+                  <th>Ação</th>
+                  <th>Excluir</th>
+                </tr>
+              </thead>
+              <tbody id="uniformTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Estoque físico</h2>
+          </div>
+
+          <form id="stockForm" class="grid-form two">
+            <label>Item
+              <select id="stockSize">
+                <option value="camiseta">Camiseta</option>
+                <option value="shorts">Shorts</option>
+                <option value="kimono">Kimono</option>
+                <option value="bandagem">Bandagem</option>
+                <option value="protetor_bucal">Protetor bucal</option>
+              </select>
+            </label>
+
+            <label>Ajuste (+/-)
+              <input id="stockDelta" type="number" value="1" />
+            </label>
+
+            <button type="submit" class="primary">Ajustar estoque</button>
+          </form>
+
+          <div id="stockView" class="cards-grid"></div>
+        </section>
+
+        <section id="snackStockPanel" class="panel">
           <div class="panel-title-row">
             <h2>Estoque • Lanches</h2>
             <span id="snackBadge" class="badge">Semana</span>
@@ -706,6 +707,7 @@
             </div>
           </div>
         </section>
+
       </section>
 
       <!-- RELATÓRIOS -->
@@ -799,12 +801,12 @@
               </label>
 
               <label>Perfil
-               <select id="newRole">
-                 <option value="professor">Colaborador</option>
-                 <option value="gestao">Gestão</option>
-                 <option value="supervisao">Supervisão</option>
-                 <option value="admin">Admin</option>
-               </select>
+                <select id="newRole">
+                  <option value="professor">Colaborador</option>
+                  <option value="gestao">Gestão</option>
+                  <option value="supervisao">Supervisão</option>
+                  <option value="admin">Admin</option>
+                </select>
               </label>
 
               <label>Núcleo (colaborador)
@@ -876,12 +878,12 @@
             </div>
           </section>
 
-          <!-- Painéis extras entram por JS (ensureAdminExtraPanels) -->
+          <!-- Painéis extras entram por JS -->
 
         </div>
       </section>
 
-            <!-- ✅ FILA DE ESPERA (fora do tab-admin) -->
+      <!-- FILA DE ESPERA -->
       <section id="tab-fila" class="tab-page hidden">
         <section class="panel">
           <div class="panel-title-row">
@@ -950,7 +952,6 @@
             </table>
           </div>
 
-          <!-- Modal da fila (Ver / Editar) -->
           <div id="filaModal" class="modal hidden">
             <div class="modal-content wide">
               <div class="modal-header">
@@ -961,202 +962,201 @@
               <div id="filaModalBody"></div>
             </div>
           </div>
-
+        </section>
       </section>
-      </section>
 
+      <!-- SUPERVISÃO -->
       <section id="tab-supervisao" class="tab-page hidden">
-  <section class="panel">
-    <div class="panel-title-row">
-      <h2>Supervisão</h2>
-      <span class="badge">Metodologia IIN</span>
-    </div>
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Supervisão</h2>
+            <span class="badge">Metodologia IIN</span>
+          </div>
 
-    <p class="muted">
-      Preencha o checklist diário e o acompanhamento de metodologia de forma organizada.
-    </p>
+          <p class="muted">
+            Preencha o checklist diário e o acompanhamento de metodologia de forma organizada.
+          </p>
 
-    <div class="grid-form four supervisao-topo">
-      <label>Data
-        <input id="supervisaoData" type="date" />
-      </label>
+          <div class="grid-form four supervisao-topo">
+            <label>Data
+              <input id="supervisaoData" type="date" />
+            </label>
 
-      <label>Núcleo
-        <select id="supervisaoNucleo">
-          <option value="">Selecione</option>
-        </select>
-      </label>
+            <label>Núcleo
+              <select id="supervisaoNucleo">
+                <option value="">Selecione</option>
+              </select>
+            </label>
 
-      <label>Modalidade
-        <select id="supervisaoModalidade">
-          <option value="">Selecione</option>
-          <option value="Boxe">Boxe</option>
-          <option value="Muay Thai">Muay Thai</option>
-          <option value="Jiu Jitso">Jiu Jitso</option>
-        </select>
-      </label>
+            <label>Modalidade
+              <select id="supervisaoModalidade">
+                <option value="">Selecione</option>
+                <option value="Boxe">Boxe</option>
+                <option value="Muay Thai">Muay Thai</option>
+                <option value="Jiu Jitso">Jiu Jitso</option>
+              </select>
+            </label>
 
-      <label>Instrutor
-        <input id="supervisaoInstrutor" type="text" placeholder="Nome do instrutor" />
-      </label>
-    </div>
-  </section>
+            <label>Instrutor
+              <input id="supervisaoInstrutor" type="text" placeholder="Nome do instrutor" />
+            </label>
+          </div>
+        </section>
 
-  <section class="panel supervisao-bloco">
-    <div class="panel-title-row">
-      <h2>Checklist Diário • Metodologia IIN</h2>
-      <span class="badge">Diário</span>
-    </div>
+        <section class="panel supervisao-bloco">
+          <div class="panel-title-row">
+            <h2>Checklist Diário • Metodologia IIN</h2>
+            <span class="badge">Diário</span>
+          </div>
 
-    <div class="supervisao-table-wrap">
-      <table class="supervisao-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Item</th>
-            <th>T1</th>
-            <th>T2</th>
-            <th>T3</th>
-            <th>T4</th>
-            <th>T5</th>
-            <th>T6</th>
-          </tr>
-        </thead>
-        <tbody id="supervisaoChecklistDiarioBody"></tbody>
-      </table>
-    </div>
+          <div class="supervisao-table-wrap">
+            <table class="supervisao-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Item</th>
+                  <th>T1</th>
+                  <th>T2</th>
+                  <th>T3</th>
+                  <th>T4</th>
+                  <th>T5</th>
+                  <th>T6</th>
+                </tr>
+              </thead>
+              <tbody id="supervisaoChecklistDiarioBody"></tbody>
+            </table>
+          </div>
 
-    <div class="supervisao-legenda">
-      <span>✔ Sim</span>
-      <span>• Parcial</span>
-      <span>✖ Não</span>
-    </div>
+          <div class="supervisao-legenda">
+            <span>✔ Sim</span>
+            <span>• Parcial</span>
+            <span>✖ Não</span>
+          </div>
 
-    <label class="supervisao-observacoes">
-      Observações gerais
-      <textarea id="supervisaoObsGerais" rows="5" placeholder="Escreva observações gerais da supervisão diária"></textarea>
-    </label>
+          <label class="supervisao-observacoes">
+            Observações gerais
+            <textarea id="supervisaoObsGerais" rows="5" placeholder="Escreva observações gerais da supervisão diária"></textarea>
+          </label>
 
-    <div class="grid-form four">
-      <label>Avaliação geral
-        <select id="supervisaoAvaliacaoGeral">
-          <option value="">Selecione</option>
-          <option value="ruim">Ruim</option>
-          <option value="insuficiente">Insuficiente</option>
-          <option value="regular">Regular</option>
-          <option value="satisfatorio">Satisfatório</option>
-          <option value="excelente">Excelente</option>
-        </select>
-      </label>
+          <div class="grid-form four">
+            <label>Avaliação geral
+              <select id="supervisaoAvaliacaoGeral">
+                <option value="">Selecione</option>
+                <option value="ruim">Ruim</option>
+                <option value="insuficiente">Insuficiente</option>
+                <option value="regular">Regular</option>
+                <option value="satisfatorio">Satisfatório</option>
+                <option value="excelente">Excelente</option>
+              </select>
+            </label>
 
-      <label>Supervisor
-        <input id="supervisaoSupervisor" type="text" placeholder="Nome do supervisor" />
-      </label>
+            <label>Supervisor
+              <input id="supervisaoSupervisor" type="text" placeholder="Nome do supervisor" />
+            </label>
 
-      <label>CPF Supervisor
-        <input id="supervisaoSupervisorCpf" type="text" placeholder="CPF do supervisor" />
-      </label>
+            <label>CPF Supervisor
+              <input id="supervisaoSupervisorCpf" type="text" placeholder="CPF do supervisor" />
+            </label>
 
-      <label>CPF Instrutor
-        <input id="supervisaoInstrutorCpf" type="text" placeholder="CPF do instrutor" />
-      </label>
-    </div>
-  </section>
+            <label>CPF Instrutor
+              <input id="supervisaoInstrutorCpf" type="text" placeholder="CPF do instrutor" />
+            </label>
+          </div>
+        </section>
 
-  <section class="panel supervisao-bloco">
-    <div class="panel-title-row">
-      <h2>Acompanhamento de Metodologia</h2>
-      <span class="badge">Mensal</span>
-    </div>
+        <section class="panel supervisao-bloco">
+          <div class="panel-title-row">
+            <h2>Acompanhamento de Metodologia</h2>
+            <span class="badge">Mensal</span>
+          </div>
 
-    <div class="grid-form four">
-      <label>Mês
-        <input id="supervisaoMes" type="month" />
-      </label>
+          <div class="grid-form four">
+            <label>Mês
+              <input id="supervisaoMes" type="month" />
+            </label>
 
-      <label>Dia
-        <input id="supervisaoDia" type="date" />
-      </label>
+            <label>Dia
+              <input id="supervisaoDia" type="date" />
+            </label>
 
-      <label>Supervisor
-        <input id="supervisaoSupervisorMensal" type="text" placeholder="Nome do supervisor" />
-      </label>
+            <label>Supervisor
+              <input id="supervisaoSupervisorMensal" type="text" placeholder="Nome do supervisor" />
+            </label>
 
-      <label>Gerente Geral
-        <input id="supervisaoGerenteGeral" type="text" placeholder="Nome do gerente geral" />
-      </label>
-    </div>
+            <label>Gerente Geral
+              <input id="supervisaoGerenteGeral" type="text" placeholder="Nome do gerente geral" />
+            </label>
+          </div>
 
-    <h3 class="supervisao-subtitle">Instrutores</h3>
-    <div class="supervisao-table-wrap">
-      <table class="supervisao-table supervisao-notas">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Critério</th>
-            <th>1ª Sem.</th>
-            <th>2ª Sem.</th>
-            <th>3ª Sem.</th>
-            <th>4ª Sem.</th>
-            <th>5ª Sem.</th>
-          </tr>
-        </thead>
-        <tbody id="supervisaoMetodologiaInstrutoresBody"></tbody>
-      </table>
-    </div>
+          <h3 class="supervisao-subtitle">Instrutores</h3>
+          <div class="supervisao-table-wrap">
+            <table class="supervisao-table supervisao-notas">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Critério</th>
+                  <th>1ª Sem.</th>
+                  <th>2ª Sem.</th>
+                  <th>3ª Sem.</th>
+                  <th>4ª Sem.</th>
+                  <th>5ª Sem.</th>
+                </tr>
+              </thead>
+              <tbody id="supervisaoMetodologiaInstrutoresBody"></tbody>
+            </table>
+          </div>
 
-    <h3 class="supervisao-subtitle">Turmas</h3>
-    <div class="supervisao-table-wrap">
-      <table class="supervisao-table supervisao-notas">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Critério</th>
-            <th>1ª Sem.</th>
-            <th>2ª Sem.</th>
-            <th>3ª Sem.</th>
-            <th>4ª Sem.</th>
-            <th>5ª Sem.</th>
-          </tr>
-        </thead>
-        <tbody id="supervisaoMetodologiaTurmasBody"></tbody>
-      </table>
-    </div>
+          <h3 class="supervisao-subtitle">Turmas</h3>
+          <div class="supervisao-table-wrap">
+            <table class="supervisao-table supervisao-notas">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Critério</th>
+                  <th>1ª Sem.</th>
+                  <th>2ª Sem.</th>
+                  <th>3ª Sem.</th>
+                  <th>4ª Sem.</th>
+                  <th>5ª Sem.</th>
+                </tr>
+              </thead>
+              <tbody id="supervisaoMetodologiaTurmasBody"></tbody>
+            </table>
+          </div>
 
-    <div class="supervisao-legenda">
-      <span>Referência:</span>
-      <span>1 = Ruim</span>
-      <span>2 = Insuficiente</span>
-      <span>3 = Regular</span>
-      <span>4 = Satisfatório</span>
-      <span>5 = Excelente</span>
-    </div>
+          <div class="supervisao-legenda">
+            <span>Referência:</span>
+            <span>1 = Ruim</span>
+            <span>2 = Insuficiente</span>
+            <span>3 = Regular</span>
+            <span>4 = Satisfatório</span>
+            <span>5 = Excelente</span>
+          </div>
 
-    <div class="grid-form four">
-      <label>Data de finalização
-        <input id="supervisaoFinalizacao" type="date" />
-      </label>
+          <div class="grid-form four">
+            <label>Data de finalização
+              <input id="supervisaoFinalizacao" type="date" />
+            </label>
 
-      <label>CPF Supervisor
-        <input id="supervisaoSupervisorMensalCpf" type="text" placeholder="CPF do supervisor" />
-      </label>
+            <label>CPF Supervisor
+              <input id="supervisaoSupervisorMensalCpf" type="text" placeholder="CPF do supervisor" />
+            </label>
 
-      <label>CPF Gerente Geral
-        <input id="supervisaoGerenteCpf" type="text" placeholder="CPF do gerente geral" />
-      </label>
-    </div>
+            <label>CPF Gerente Geral
+              <input id="supervisaoGerenteCpf" type="text" placeholder="CPF do gerente geral" />
+            </label>
+          </div>
 
-    <div class="toolbar" style="margin-top:16px;">
-      <button type="button" class="primary" id="salvarSupervisaoBtn">Salvar checklist</button>
-    </div>
-  </section>
-</section>
+          <div class="toolbar" style="margin-top:16px;">
+            <button type="button" class="primary" id="salvarSupervisaoBtn">Salvar checklist</button>
+          </div>
+        </section>
+      </section>
 
     </div>
   </main>
 
   <!-- TEMPLATE CARD CHAMADA -->
-   
   <template id="attendanceCardTemplate">
     <article class="student-card">
       <div class="student-card-head">
@@ -1212,7 +1212,7 @@
   </div>
 
   <script defer src="ead/ead.js"></script>
-<script defer src="fila.js"></script>
-<script defer src="app.js"></script>
+  <script defer src="fila.js"></script>
+  <script defer src="app.js"></script>
 </body>
 </html>

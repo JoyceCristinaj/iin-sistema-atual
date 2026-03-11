@@ -4560,9 +4560,9 @@ function render() {
   const tab = btn.dataset.tab;
 
   if (tab === "tab-estoque") {
-    const allowedProject = state.currentProjectKey === SNACK_PROJECT_KEY;
-    btn.classList.toggle("hidden", !allowedProject);
-  }
+  const canAccessStock = user.role === "admin" || user.role === "gestao";
+  btn.classList.toggle("hidden", !canAccessStock);
+}
 
   // Admin só admin
   if (tab === "tab-admin") {
@@ -4599,16 +4599,20 @@ function render() {
   }
 });
 
-  if (user.role === "professor" && !["tab-dashboard", "tab-chamada", "tab-professor", "tab-aulas", "tab-estoque"].includes(state.activeTab)) {
+  if (user.role === "professor" && !["tab-dashboard", "tab-chamada", "tab-professor", "tab-aulas"].includes(state.activeTab)) {
   state.activeTab = "tab-chamada";
 }
 
-if (user.role === "gestao" && state.activeTab === "tab-admin") {
+if (user.role === "gestao" && !["tab-dashboard", "tab-gestao", "tab-estoque", "tab-relatorios", "tab-fila", "tab-aulas"].includes(state.activeTab)) {
   state.activeTab = "tab-dashboard";
 }
 
 if (user.role === "supervisao" && !["tab-dashboard", "tab-supervisao"].includes(state.activeTab)) {
   state.activeTab = "tab-supervisao";
+}
+
+if (user.role === "admin" && !["tab-dashboard", "tab-gestao", "tab-estoque", "tab-relatorios", "tab-admin", "tab-fila", "tab-aulas"].includes(state.activeTab)) {
+  state.activeTab = "tab-dashboard";
 }
 
   ui.tabPages.forEach((p) => p && p.classList.toggle("hidden", p.id !== state.activeTab));

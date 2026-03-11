@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
 
 /* ===== RESET & BASE (escopado no EAD) ===== */
 .ead-root, .ead-root * , .ead-root *::before, .ead-root *::after {
@@ -7,33 +7,35 @@
 .ead-root * { margin: 0; padding: 0; }
 
 .ead-root{
-  --bg: #121212;
-  --bg-card: #1a1a1a;
-  --bg-secondary: #262626;
-  --text: #f2f2f2;
-  --text-muted: #8c8c8c;
-  --primary: #8B1A1A;
-  --primary-light: #a32929;
-  --border: #2e2e2e;
-  --font-display: 'Oswald', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --radius: 8px;
-  --shadow-glow: 0 0 30px rgba(139, 26, 26, 0.3);
+  --bg: #0c111a;
+  --bg-card: #121a27;
+  --bg-secondary: #1a2433;
+  --panel-soft: #162133;
+  --text: #f4f7fb;
+  --text-muted: #97a3b7;
+  --primary: #8f1422;
+  --primary-light: #c22739;
+  --border: rgba(151, 163, 184, 0.18);
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Manrope", sans-serif;
+  --radius: 18px;
+  --shadow-glow: 0 18px 40px rgba(0, 0, 0, 0.28);
 
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-
-  border-radius: 14px;
-  padding: 10px;
+  background:
+    radial-gradient(circle at top right, rgba(194, 39, 57, 0.1), transparent 22%),
+    linear-gradient(180deg, #0c111a 0%, #111827 100%);
+  border-radius: 20px;
+  padding: 16px;
 }
 
 .ead-root h1, .ead-root h2, .ead-root h3, .ead-root h4, .ead-root h5, .ead-root h6 {
   font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
 }
 .ead-root a { color: inherit; text-decoration: none; }
 .ead-root button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; }
@@ -49,7 +51,7 @@
 /* ===== HEADER ===== */
 .ead-root .header {
   border-bottom: 1px solid var(--border);
-  height: 64px;
+  min-height: 68px;
   display: flex;
   align-items: center;
 }
@@ -61,9 +63,9 @@
 }
 .ead-root .logo {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.03em;
 }
 .ead-root .logo-primary { color: var(--primary); }
 .ead-root .logo-text { color: var(--text); }
@@ -79,8 +81,12 @@
 .ead-root .hero {
   position: relative;
   overflow: hidden;
-  padding: 4rem 0;
-  background: linear-gradient(135deg, var(--bg) 0%, #1a0a0a 100%);
+  padding: 3.4rem 0;
+  background:
+    radial-gradient(circle at top right, rgba(194, 39, 57, 0.12), transparent 24%),
+    linear-gradient(135deg, #0c111a 0%, #121b2b 56%, #251018 100%);
+  border: 1px solid var(--border);
+  border-radius: 24px;
 }
 .ead-root .hero-content {
   position: relative;
@@ -88,13 +94,13 @@
   max-width: 560px;
 }
 .ead-root .hero h1 {
-  font-size: 2.5rem;
+  font-size: clamp(2.2rem, 4vw, 3rem);
   line-height: 1.1;
   margin-bottom: 1rem;
 }
 .ead-root .hero p {
   color: var(--text-muted);
-  font-size: 1.1rem;
+  font-size: 1.02rem;
 }
 .ead-root .text-gradient {
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
@@ -146,14 +152,15 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
   cursor: pointer;
   text-align: left;
   width: 100%;
+  box-shadow: var(--shadow-glow);
 }
 .ead-root .course-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-glow);
+  transform: translateY(-5px);
+  border-color: rgba(194, 39, 57, 0.32);
 }
 .ead-root .card-thumb {
   position: relative;
@@ -183,12 +190,11 @@
 }
 .ead-root .card-category {
   background: var(--primary);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
   font-family: var(--font-display);
   font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   color: #fff;
 }
 .ead-root .card-play-overlay {
@@ -220,14 +226,14 @@
   color: #fff;
 }
 .ead-root .card-body {
-  padding: 1rem;
+  padding: 1.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 .ead-root .card-title {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   line-height: 1.3;
 }
 .ead-root .card-desc {
