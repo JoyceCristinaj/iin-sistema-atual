@@ -2364,3 +2364,288 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
     padding-right: 10px !important;
   }
 }
+
+/* ===== MOBILE MELHOR APROVEITADO ===== */
+@media (max-width: 700px) {
+  :root {
+    --container: 100%;
+    --header-h: auto;
+    --tabs-h: auto;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 10px !important;
+  }
+
+  .app-content {
+    padding-top: 10px !important;
+    padding-bottom: 24px !important;
+  }
+
+  /* HEADER */
+  .hero {
+    padding: 10px 0 16px !important;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .hero-inner {
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .brand {
+    gap: 10px !important;
+    align-items: flex-start !important;
+  }
+
+  .logo {
+    width: 38px !important;
+    height: 38px !important;
+    flex-shrink: 0;
+  }
+
+  .brand-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .eyebrow {
+    font-size: 0.58rem !important;
+    letter-spacing: 0.12em !important;
+    margin-bottom: 2px !important;
+  }
+
+  .brand-text h1,
+  .brand h1,
+  #welcomeTitle {
+    font-size: 0.88rem !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.02em !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: initial !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .sub,
+  #projectSubtitle {
+    margin-top: 3px !important;
+    font-size: 0.62rem !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+  }
+
+  .hero .ghost,
+  #logoutBtn {
+    min-height: 38px !important;
+    padding: 0 14px !important;
+    border-radius: 14px !important;
+    font-size: 0.82rem !important;
+    flex-shrink: 0;
+  }
+
+  /* ABAS */
+  .tabs-wrap {
+    margin-top: -10px !important;
+  }
+
+  .tabs-bar {
+    min-height: auto !important;
+    padding: 8px !important;
+    gap: 6px !important;
+    border-radius: 16px !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .tab-btn {
+    min-height: 40px !important;
+    padding: 0 14px !important;
+    font-size: 0.8rem !important;
+    border-radius: 14px !important;
+    flex: 0 0 auto !important;
+  }
+
+  /* PAINÉIS */
+  .panel {
+    padding: 12px !important;
+    border-radius: 18px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .panel-title-row {
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .panel-title-row h2 {
+    font-size: 0.95rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .badge {
+    padding: 4px 10px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* MÉTRICAS */
+  .panel-grid.four,
+  .dashboard-metrics {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .metric-card {
+    min-height: 78px !important;
+    padding: 10px 10px 8px !important;
+    border-radius: 16px !important;
+  }
+
+  .metric-card::after {
+    top: 10px !important;
+    left: 10px !important;
+    width: 26px !important;
+    height: 3px !important;
+  }
+
+  .metric-card p {
+    margin: 12px 0 4px !important;
+    font-size: 0.66rem !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0.03em !important;
+  }
+
+  .metric-card h3 {
+    font-size: 1.5rem !important;
+    line-height: 1 !important;
+  }
+
+  /* FORMULÁRIOS */
+  .grid-form.two,
+  .grid-form.three,
+  .grid-form.four {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .grid-form label {
+    gap: 5px !important;
+    font-size: 0.84rem !important;
+  }
+
+  .grid-form input,
+  .grid-form select,
+  .grid-form textarea,
+  .toolbar input,
+  .toolbar select {
+    min-height: 42px !important;
+    padding: 10px 12px !important;
+    font-size: 0.92rem !important;
+    border-radius: 12px !important;
+  }
+
+  .grid-form textarea {
+    min-height: 90px !important;
+  }
+
+  /* TOOLBARS */
+  .toolbar {
+    gap: 8px !important;
+    margin: 10px 0 !important;
+  }
+
+  .panel > .toolbar {
+    padding: 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .toolbar label {
+    width: 100% !important;
+  }
+
+  /* BOTÕES */
+  button,
+  .primary,
+  .ghost,
+  .warn,
+  .small-btn {
+    min-height: 42px !important;
+    padding: 0 14px !important;
+    font-size: 0.86rem !important;
+    border-radius: 14px !important;
+  }
+
+  /* CHART */
+  .chart-box {
+    height: 150px !important;
+    min-height: 150px !important;
+    padding: 6px !important;
+    border-radius: 14px !important;
+  }
+
+  .chart-box canvas {
+    min-height: 130px !important;
+  }
+
+  /* TABELAS E BUSCA */
+  .table-wrapper {
+    border-radius: 14px !important;
+  }
+
+  .table-wrapper th,
+  .table-wrapper td {
+    padding: 10px !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* BUSCA DA CHAMADA */
+  #attendanceSearch,
+  #gestaoAlunoBusca,
+  #filaBusca {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* CARD DE CHAMADA */
+  .student-card {
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .student-name {
+    font-size: 0.9rem !important;
+  }
+
+  .student-contact,
+  .student-class-info,
+  .student-status {
+    font-size: 0.78rem !important;
+  }
+
+  .student-actions {
+    gap: 6px !important;
+  }
+
+  .student-actions button {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0 !important;
+    padding: 8px 10px !important;
+  }
+
+  /* AULAS EAD */
+  #eadRoot {
+    overflow: hidden;
+    border-radius: 14px;
+  }
+
+  /* ESCONDE SOBRAS LATERAIS */
+  html,
+  body {
+    overflow-x: hidden !important;
+  }
+}
