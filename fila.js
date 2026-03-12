@@ -12,7 +12,11 @@
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  const INSCRICAO_API_URL = "http://localhost:3000/api/inscricoes";
+  const INSCRICAO_API_URL =
+    window.API_INSCRICOES_URL ||
+    window.INSCRICOES_API_URL ||
+    window.INSCRICAO_API_URL ||
+    "https://script.google.com/macros/s/AKfycbzDnYroQADyNc6WFjBfVtfXGuyIrQ5-PLYErZ3E2vuKKcyeZyVzbrkr74BgkzX58r8-Lw/exec";
   const INSCRICAO_API_KEY_STORAGE = "iin_api_key_admin";
 
   function getApiKey() {
@@ -39,9 +43,8 @@
 
   async function apiGetLocal(action, params = {}) {
     const key = getApiKey();
-    const endpoint = action === "get" ? "get" : "list";
-
-    const url = new URL(`${INSCRICAO_API_URL}/${endpoint}`);
+    const url = new URL(INSCRICAO_API_URL);
+    url.searchParams.set("action", action);
     if (key) url.searchParams.set("api_key", key);
 
     Object.entries(params).forEach(([k, v]) => {
@@ -64,9 +67,9 @@
     const key = getApiKey();
     const payload = Object.assign({ api_key: key }, body);
 
-    const res = await fetch(`${INSCRICAO_API_URL}/post`, {
+    const res = await fetch(INSCRICAO_API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
     });
 

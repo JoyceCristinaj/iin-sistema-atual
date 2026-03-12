@@ -13,7 +13,10 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
 const INSCRICAO_GAS_URL =
+  process.env.INSCRICAO_GAS_URL ||
   "https://script.google.com/macros/s/AKfycbzDnYroQADyNc6WFjBfVtfXGuyIrQ5-PLYErZ3E2vuKKcyeZyVzbrkr74BgkzX58r8-Lw/exec";
+
+const INSCRICAO_API_KEY = process.env.INSCRICAO_API_KEY || "";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -42,8 +45,18 @@ function buildGasUrl(action, params = {}) {
   const url = new URL(INSCRICAO_GAS_URL);
   url.searchParams.set("action", action);
 
+  if (INSCRICAO_API_KEY) {
+    url.searchParams.set("api_key", INSCRICAO_API_KEY);
+  }
+
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && String(v).trim() !== "") {
+    if (
+      k !== "action" &&
+      k !== "api_key" &&
+      v !== undefined &&
+      v !== null &&
+      String(v).trim() !== ""
+    ) {
       url.searchParams.set(k, String(v));
     }
   });
@@ -299,9 +312,40 @@ app.post("/api/alunos", async (req, res) => {
 
 /* =========================
    PONTE: INSCRIÇÕES (Apps Script)
-   Front chama localhost:3000
+   Front chama /api/inscricoes
    Node chama Apps Script
 ========================= */
+
+// PING
+app.get("/api/inscricoes/ping", async (req, res) => {
+  try {
+    const url = buildGasUrl("ping");
+    console.log("Chamando GAS PING:", url);
+
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+    });
+
+    const data = await readJsonFromResponse(response);
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        ok: false,
+        error: data?.error || `Falha no ping (${response.status})`,
+        details: data,
+      });
+    }
+
+    return res.json(data);
+  } catch (err) {
+    console.error("Erro /api/inscricoes/ping:", err);
+    return res.status(500).json({
+      ok: false,
+      error: normalizeError(err),
+    });
+  }
+});
 
 // LISTAR inscrições
 app.get("/api/inscricoes/list", async (req, res) => {
@@ -365,20 +409,25 @@ app.get("/api/inscricoes/get", async (req, res) => {
   }
 });
 
-// AÇÕES de inscrição: update, delete, convert, log, create
+// AÇÕES de inscrição: create, update, delete, convert, log
 app.post("/api/inscricoes/post", async (req, res) => {
   try {
-    const body =
+    const incomingBody =
       typeof req.body === "string"
         ? JSON.parse(req.body || "{}")
         : (req.body || {});
 
-    console.log("Chamando GAS POST:", body);
+    const body = {
+      ...incomingBody,
+      api_key: INSCRICAO_API_KEY || incomingBody.api_key || "",
+    };
+
+    console.log("Chamando GAS POST:", body.action || "(sem action)");
 
     const response = await fetch(INSCRICAO_GAS_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "text/plain;charset=utf-8",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
       redirect: "follow",
@@ -392,6 +441,10 @@ app.post("/api/inscricoes/post", async (req, res) => {
         error: data?.error || `Falha ao enviar ação de inscrição (${response.status})`,
         details: data,
       });
+    }
+
+    if (!data?.ok) {
+      return res.status(400).json(data);
     }
 
     return res.json(data);

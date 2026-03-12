@@ -1,7 +1,14 @@
 "use strict";
 
-const SCRIPT_URL =
+const API_INSCRICOES_URL =
+  window.API_INSCRICOES_URL ||
+  window.INSCRICOES_API_URL ||
+  window.INSCRICAO_API_URL ||
   "https://script.google.com/macros/s/AKfycbzDnYroQADyNc6WFjBfVtfXGuyIrQ5-PLYErZ3E2vuKKcyeZyVzbrkr74BgkzX58r8-Lw/exec";
+
+window.API_INSCRICOES_URL = API_INSCRICOES_URL;
+window.INSCRICOES_API_URL = API_INSCRICOES_URL;
+window.INSCRICAO_API_URL = API_INSCRICOES_URL;
 
 const NUCLEOS_AULAS = {
   "Núcleo 1 - Jacarezinho": {
@@ -157,11 +164,13 @@ function addOneHour(hhmm) {
   const parts = String(hhmm).split(":");
   const hh = parseInt(parts[0], 10);
   const mm = parseInt(parts[1], 10);
+
   if (!Number.isFinite(hh) || !Number.isFinite(mm)) return "";
 
   const total = (hh * 60 + mm + 60) % (24 * 60);
   const nh = String(Math.floor(total / 60)).padStart(2, "0");
   const nm = String(total % 60).padStart(2, "0");
+
   return `${nh}:${nm}`;
 }
 
@@ -189,6 +198,7 @@ function setSelectOptions(selectEl, placeholder, options) {
 
 function ensureToast() {
   let t = document.getElementById("toast");
+
   if (!t) {
     t = document.createElement("div");
     t.id = "toast";
@@ -197,6 +207,7 @@ function ensureToast() {
     t.setAttribute("aria-live", "polite");
     document.body.appendChild(t);
   }
+
   return t;
 }
 
@@ -204,18 +215,17 @@ function showToast(message, kind = "ok") {
   const t = ensureToast();
   t.className = `toast show ${kind}`;
   t.textContent = message;
+
   window.clearTimeout(showToast._timer);
-  showToast._timer = window.setTimeout(() => t.classList.remove("show"), 4200);
+  showToast._timer = window.setTimeout(() => {
+    t.classList.remove("show");
+  }, 4200);
 }
 
 function getSubmitBtn(form) {
   return document.getElementById("btnEnviar") || form.querySelector('button[type="submit"]');
 }
 
-/* IMPORTANTE:
-   - NÃO desabilita o botão por validade.
-   - Só desabilita quando estiver "Enviando..."
-*/
 function updateSubmitAvailability(form) {
   const btn = getSubmitBtn(form);
   if (!btn) return;
@@ -246,8 +256,10 @@ function escapeAttrValue(value) {
 function getLabelText(el) {
   const id = el && el.id ? el.id : "";
   if (!id) return "";
+
   const safe = escapeAttrValue(id);
   const label = document.querySelector(`label[for="${safe}"]`);
+
   return (label && label.textContent ? label.textContent : "").replace("*", "").trim();
 }
 
@@ -262,6 +274,7 @@ function ensureInlineErrorAfter(el) {
   msg.style.fontSize = "12px";
   msg.style.color = "rgba(255,77,77,.95)";
   el.insertAdjacentElement("afterend", msg);
+
   return msg;
 }
 
@@ -287,6 +300,7 @@ function markInvalidFields(form) {
     if (fieldWrap) fieldWrap.classList.add("has-error");
 
     let msgEl = null;
+
     if (fieldWrap) {
       msgEl = fieldWrap.querySelector(".error-msg");
       if (!msgEl) {
@@ -300,6 +314,7 @@ function markInvalidFields(form) {
 
     const label = getLabelText(el);
     const text = el.validationMessage || "Preencha este campo.";
+
     msgEl.textContent = label ? `${label}: ${text}` : text;
     msgEl.style.display = "block";
     msgEl.style.marginTop = "4px";
@@ -320,6 +335,7 @@ function preencherNucleoModalidadeDiaHorario() {
   const modalidadeEl = document.getElementById("modalidade");
   const diaEl = document.getElementById("dia");
   const horarioEl = document.getElementById("horario");
+
   if (!nucleoEl || !modalidadeEl || !diaEl || !horarioEl) return;
 
   setSelectOptions(nucleoEl, "Selecione", Object.keys(NUCLEOS_AULAS));
@@ -347,6 +363,7 @@ function preencherNucleoModalidadeDiaHorario() {
     horarioEl.disabled = true;
     diaEl.value = "";
     horarioEl.value = "";
+
     setSelectOptions(diaEl, "Selecione a modalidade primeiro", []);
     setSelectOptions(horarioEl, "Selecione o dia primeiro", []);
   }
@@ -409,6 +426,7 @@ function preencherNucleoModalidadeDiaHorario() {
     }
 
     let horarios = [];
+
     if (modData.horarios && modData.horarios[diaEl.value]) {
       horarios = modData.horarios[diaEl.value];
     } else if (modData.horariosBase) {
@@ -420,13 +438,12 @@ function preencherNucleoModalidadeDiaHorario() {
       horarios.length ? "Selecione um horário" : "Sem horários disponíveis",
       horarios
     );
-    horarioEl.disabled = horarios.length === 0;
 
+    horarioEl.disabled = horarios.length === 0;
     updateSubmitAvailability(form);
   });
 
   horarioEl.addEventListener("change", () => updateSubmitAvailability(form));
-
   updateSubmitAvailability(form);
 }
 
@@ -482,25 +499,60 @@ function validate(form) {
   return true;
 }
 
-async function apiSend(payload) {
-  if (!SCRIPT_URL) throw new Error("SCRIPT_URL não configurada.");
+async function parseApiResponse(res) {
+  const raw = await res.text();
+  let data = null;
 
-  await fetch(SCRIPT_URL, {
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    throw new Error("A API retornou uma resposta inválida.");
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || `Erro HTTP ${res.status}`);
+  }
+
+  if (!data || typeof data !== "object") {
+    throw new Error("Resposta vazia da API.");
+  }
+
+  if (!data.ok) {
+    throw new Error(data.error || "A API recusou a solicitação.");
+  }
+
+  return data;
+}
+
+async function apiSend(payload) {
+  const res = await fetch(API_INSCRICOES_URL, {
     method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "create", payload }),
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8",
+    },
+    body: JSON.stringify({
+      action: "create",
+      payload,
+    }),
   });
 
-  return { ok: true };
+  return parseApiResponse(res);
 }
 
 async function apiPing() {
-  if (!SCRIPT_URL) return false;
   try {
-    await fetch(`${SCRIPT_URL}?action=ping`, { method: "GET", mode: "no-cors" });
-    return true;
-  } catch {
+    const url = new URL(API_INSCRICOES_URL);
+    url.searchParams.set("action", "ping");
+
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    const data = await parseApiResponse(res);
+    return !!data.ok;
+  } catch (err) {
+    console.warn("Falha no ping da API de inscrição:", err);
     return false;
   }
 }
@@ -541,6 +593,7 @@ async function apiPing() {
     const payload = formToObject(form);
 
     setSubmitting(form, true);
+
     try {
       await apiSend(payload);
 
@@ -552,23 +605,35 @@ async function apiPing() {
       form.reset();
       triedSubmit = false;
       clearFieldErrors(form);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      preencherNucleoModalidadeDiaHorario();
+      updateSubmitAvailability(form);
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     } catch (err) {
       const msg = String(err?.message || err || "");
       const lower = msg.toLowerCase();
 
-      if (lower.includes("script_url")) {
-        showToast("Configuração pendente: URL do Apps Script não encontrada.", "warn");
-      } else if (lower.includes("failed to fetch") || lower.includes("network")) {
+      if (lower.includes("failed to fetch") || lower.includes("network")) {
         showToast("Não foi possível enviar agora. Verifique internet e tente novamente.", "warn");
+      } else if (lower.includes("inválida") || lower.includes("vazia")) {
+        showToast("A API respondeu de forma inesperada. Verifique o Apps Script publicado.", "bad");
       } else {
         showToast(`Não foi possível enviar agora. ${msg ? "Motivo: " + msg : ""}`, "bad");
       }
+
+      console.error("Erro ao enviar inscrição:", err);
     } finally {
       setSubmitting(form, false);
       updateSubmitAvailability(form);
     }
   });
 
-  apiPing().then(() => {});
+  apiPing().then((ok) => {
+    if (!ok) {
+      console.warn("API de inscrição não respondeu ao ping.");
+    }
+  });
 })();

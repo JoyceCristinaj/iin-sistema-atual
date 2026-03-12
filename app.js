@@ -17,8 +17,8 @@ function init() {
   hydratePrintFieldsUI();
   ensureAdminExtraPanels();
   hydrateLessonAdminCategorySelect();
-  clearLessonForm("Cadastre aulas por modalidade, semana e ordem pedagÃ³gica.");
-  clearWeekForm("Cadastre o resumo pedagÃ³gico da semana.");
+  clearLessonForm("Cadastre aulas por modalidade, semana e ordem pedagógica.");
+  clearWeekForm("Cadastre o resumo pedagógico da semana.");
   renderAdminLessonsTable();
   renderAdminWeeksTable();
   renderLessonsGrid();

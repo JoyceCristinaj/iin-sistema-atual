@@ -1,12 +1,17 @@
 "use strict";
 
 // ✅ 1) URL da API (uma vez só)
-window.INSCRICOES_API_URL =
+window.API_INSCRICOES_URL =
+  window.API_INSCRICOES_URL ||
   window.INSCRICOES_API_URL ||
+  window.INSCRICAO_API_URL ||
   "https://script.google.com/macros/s/AKfycbzDnYroQADyNc6WFjBfVtfXGuyIrQ5-PLYErZ3E2vuKKcyeZyVzbrkr74BgkzX58r8-Lw/exec";
+window.INSCRICOES_API_URL = window.API_INSCRICOES_URL;
+window.INSCRICAO_API_URL = window.API_INSCRICOES_URL;
 
 // ✅ 2) cria a constante que seu código usa no fetch()
-const INSCRICOES_API_URL = window.INSCRICOES_API_URL;
+const API_INSCRICOES_URL = window.API_INSCRICOES_URL;
+const INSCRICOES_API_URL = window.API_INSCRICOES_URL;
 
 // ===== ÍCONES (Mostrar/Ocultar senha) =====
 const ICON_EYE_OPEN = `
@@ -51,7 +56,7 @@ const STORAGE_KEY = "iin-system-v9_2";
 const SESSION_KEY = "iin-session-v9_2";
 const REPORT_PREFS_KEY = "iin-report-prefs-v2";
 const API_BASE = "http://localhost:3000/api";
-const INSCRICAO_API_URL = "https://script.google.com/macros/s/AKfycbzDnYroQADyNc6WFjBfVtfXGuyIrQ5-PLYErZ3E2vuKKcyeZyVzbrkr74BgkzX58r8-Lw/exec";
+const INSCRICAO_API_URL = window.API_INSCRICOES_URL;
 const INSCRICAO_API_KEY_STORAGE = "iin_api_key_admin";
 const PROJECTS = [
   {
