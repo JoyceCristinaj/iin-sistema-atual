@@ -319,7 +319,9 @@
             </label>
 
             <label>Turma / Horário
-              <input id="professorClassSchedule" type="text" placeholder="Ex.: 08:00 às 09:00" />
+              <select id="professorClassSchedule">
+                <option value="">Selecione o horário da aula</option>
+              </select>
             </label>
 
             <label>Colaborador responsável
@@ -367,24 +369,33 @@
           </div>
 
           <div class="grid-form two">
-            <label id="teacherAbsStudentWrap">Aluno (atestado)
+            <label id="teacherAbsStudentWrap">Aluno
               <select id="teacherAbsStudent"></select>
             </label>
 
-            <label>Tipo de atestado
+            <label>Tipo de registro
               <select id="teacherAbsType">
-                <option value="aluno">Aluno</option>
-                <option value="colaborador">Colaborador</option>
+                <option value="atestado_aluno">Atestado do aluno</option>
+                <option value="atestado_colaborador">Atestado / justificativa do colaborador</option>
+                <option value="justificativa_informal">Justificativa informal</option>
+                <option value="imagem_responsavel">Foto / imagem enviada pelo responsável</option>
+                <option value="observacao_interna">Observação interna</option>
               </select>
             </label>
 
-            <label>Arquivo de atestado
+            <label>Justificativa / observação
+              <textarea id="teacherAbsText" rows="3" placeholder="Descreva a justificativa, observação ou contexto do arquivo"></textarea>
+            </label>
+
+            <label>Imagem / arquivo / anexo
               <input id="teacherAbsFile" type="file" accept=".pdf,image/*" />
             </label>
 
             <div class="toolbar compact">
-              <button id="teacherAbsSave" type="button" class="small-btn">Salvar atestado</button>
+              <button id="teacherAbsSave" type="button" class="small-btn">Salvar registro</button>
             </div>
+
+            <p id="teacherAbsStatus" class="report-status" style="grid-column:1/-1;"></p>
 
             <label>Tema Momento do Mestre
               <select id="teacherMestreTheme">
@@ -412,6 +423,14 @@
               <button id="teacherWhatsappCopy" type="button" class="ghost">Copiar texto da chamada</button>
             </div>
           </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Histórico de justificativas e atestados</h2>
+          </div>
+
+          <ul id="teacherAbsHistory" class="history-list"></ul>
         </section>
 
         <section class="panel">
@@ -958,6 +977,36 @@
         <tbody id="usersTableBody"></tbody>
       </table>
     </div>
+  </div>
+</section>
+
+          <section class="panel collapsible-panel is-open" id="adminSupportPanel">
+  <button type="button" class="panel-collapse-toggle" id="adminSupportToggle" aria-expanded="true" aria-controls="adminSupportContent">
+    <div class="panel-collapse-head">
+      <h2>Avisos do Colaborador</h2>
+      <span class="panel-collapse-sub">Justificativas, atestados e anexos registrados no painel</span>
+    </div>
+
+    <span class="panel-collapse-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+  </button>
+
+  <div id="adminSupportContent" class="panel-collapse-content">
+    <div class="toolbar" style="margin-bottom:12px;">
+      <select id="adminSupportTypeFilter">
+        <option value="todos">Todos os tipos</option>
+        <option value="atestado_aluno">Atestado do aluno</option>
+        <option value="atestado_colaborador">Atestado / justificativa do colaborador</option>
+        <option value="justificativa_informal">Justificativa informal</option>
+        <option value="imagem_responsavel">Foto / imagem enviada pelo responsável</option>
+        <option value="observacao_interna">Observação interna</option>
+      </select>
+    </div>
+
+    <ul id="adminSupportRecordsBoard" class="history-list"></ul>
   </div>
 </section>
 

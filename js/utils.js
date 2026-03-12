@@ -101,6 +101,68 @@ function escapeHtml(s) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+function addOneHourToTime(start) {
+  const [hh, mm] = String(start || "").split(":").map((value) => Number.parseInt(value, 10));
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return "";
+
+  const total = (hh * 60 + mm + 60) % (24 * 60);
+  const nextHour = String(Math.floor(total / 60)).padStart(2, "0");
+  const nextMinute = String(total % 60).padStart(2, "0");
+  return `${nextHour}:${nextMinute}`;
+}
+
+function toScheduleRange(start) {
+  const end = addOneHourToTime(start);
+  return end ? `${start} às ${end}` : String(start || "");
+}
+
+function getWeekdayLabel(dateISO) {
+  if (!dateISO) return "";
+
+  const date = new Date(`${dateISO}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"][date.getDay()] || "";
+}
+
+function uniqueScheduleValues(values) {
+  const seen = new Set();
+  return (values || []).filter((value) => {
+    const key = String(value || "").trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function getNucleusScheduleOptions(nucleus, dateISO = "") {
+  const nucleusKey = String(nucleus || "").trim();
+  const rule = NUCLEOS_AULAS[nucleusKey];
+  if (!rule || !rule.modalidades) return [];
+
+  const weekday = getWeekdayLabel(dateISO);
+  const values = [];
+
+  Object.values(rule.modalidades).forEach((modality) => {
+    if (weekday && modality?.horarios?.[weekday]) {
+      values.push(...modality.horarios[weekday]);
+      return;
+    }
+
+    if (modality?.horarios && !weekday) {
+      Object.values(modality.horarios).forEach((items) => values.push(...items));
+      return;
+    }
+
+    if (Array.isArray(modality?.horariosBase)) {
+      values.push(...modality.horariosBase.map(toScheduleRange));
+    }
+  });
+
+  return uniqueScheduleValues(values);
+}
+
 function isoWeekKey(date = new Date()) {
   // ISO week: YYYY-Www
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));

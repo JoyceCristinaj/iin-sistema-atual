@@ -89,7 +89,10 @@ tabPages: [
   teacherAbsStudentWrap: el("teacherAbsStudentWrap"),
   teacherAbsStudent: el("teacherAbsStudent"),
   teacherAbsFile: el("teacherAbsFile"),
+  teacherAbsText: el("teacherAbsText"),
   teacherAbsSave: el("teacherAbsSave"),
+  teacherAbsStatus: el("teacherAbsStatus"),
+  teacherAbsHistory: el("teacherAbsHistory"),
 
   teacherMestreTheme: el("teacherMestreTheme"),
   teacherMestreOpen: el("teacherMestreOpen"),
@@ -165,6 +168,8 @@ tabPages: [
   adminMestreFile: el("adminMestreFile"),
   adminMestreSave: el("adminMestreSave"),
   adminMestreTableBody: el("adminMestreTableBody"),
+  adminSupportTypeFilter: el("adminSupportTypeFilter"),
+  adminSupportRecordsBoard: el("adminSupportRecordsBoard"),
 
   adminLogNucleusFilter: el("adminLogNucleusFilter"),
   adminOpenLogModal: el("adminOpenLogModal"),
@@ -248,6 +253,40 @@ function hydrateStudentScheduleOptions() {
     opt.textContent = value;
     ui.studentSchedule.appendChild(opt);
   });
+}
+
+function hydrateProfessorScheduleOptions(nucleus, dateISO = ui.professorClassDate?.value || "", currentValue = "") {
+  if (!ui.professorClassSchedule) return;
+
+  const schedules = getNucleusScheduleOptions(nucleus, dateISO);
+  const select = ui.professorClassSchedule;
+  const selected = String(currentValue || select.value || "").trim();
+
+  select.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = schedules.length
+    ? "Selecione o horário da aula"
+    : "Nenhum horário disponível para este núcleo/data";
+  select.appendChild(placeholder);
+
+  schedules.forEach((schedule) => {
+    const opt = document.createElement("option");
+    opt.value = schedule;
+    opt.textContent = schedule;
+    select.appendChild(opt);
+  });
+
+  if (selected && !schedules.includes(selected)) {
+    const legacy = document.createElement("option");
+    legacy.value = selected;
+    legacy.textContent = `${selected} (salvo)`;
+    select.appendChild(legacy);
+  }
+
+  select.disabled = schedules.length === 0 && !selected;
+  select.value = selected && [...select.options].some((option) => option.value === selected) ? selected : "";
 }
 function hydrateStudentModalityOptions() {
   if (!ui.studentModality) return;
@@ -529,7 +568,8 @@ document.addEventListener("click", (e) => {
 function bindCollapsiblePanels() {
   const pairs = [
     { toggleId: "adminMestreToggle", panelId: "adminMestrePanel" },
-    { toggleId: "usersPanelToggle", panelId: "usersPanel" }
+    { toggleId: "usersPanelToggle", panelId: "usersPanel" },
+    { toggleId: "adminSupportToggle", panelId: "adminSupportPanel" }
   ];
 
   pairs.forEach(({ toggleId, panelId }) => {

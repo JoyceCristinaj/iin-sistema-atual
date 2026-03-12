@@ -111,6 +111,8 @@ function saveAttendanceStaff(nucleus) {
 
   if (!staff.classDate) {
     ui.professorClassStatus.textContent = "Defina a data da aula.";
+  } else if (!staff.classSchedule) {
+    ui.professorClassStatus.textContent = "Selecione o horário da aula.";
   } else {
     ui.professorClassStatus.textContent = "Dados da aula salvos. Agora você pode marcar presença.";
   }

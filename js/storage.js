@@ -5,6 +5,7 @@ const state = {
   visitors: [],
   users: [],
   history: [],
+  collaboratorRecordsByProject: {},
   uniformStockByProject: {},
   snackStockByProject: {},
   classDaysByProject: {},
@@ -85,9 +86,46 @@ function createEmptyDeliveryItems() {
   return Object.fromEntries(STOCK_CATEGORIES.map((item) => [item.key, false]));
 }
 
+function normalizeProjectKey(projectKey) {
+  const key = String(projectKey || "").trim();
+  return PROJECTS.some((project) => project.key === key) ? key : "";
+}
+
+function normalizeNucleusName(nucleus) {
+  const raw = String(nucleus || "").trim();
+  if (!raw) return "";
+
+  const compact = normText(raw).replace(/^nucleo\s*\d+\s*-\s*/, "").trim();
+
+  for (const nuclei of Object.values(PROJECT_NUCLEI)) {
+    const match = nuclei.find((item) => normText(item) === compact || normText(item) === normText(raw));
+    if (match) return match;
+  }
+
+  return raw;
+}
+
+function inferProjectKeyFromNucleus(nucleus) {
+  const normalizedNucleus = normalizeNucleusName(nucleus);
+  if (!normalizedNucleus) return "";
+
+  for (const [projectKey, nuclei] of Object.entries(PROJECT_NUCLEI)) {
+    if (nuclei.some((item) => normText(item) === normText(normalizedNucleus))) {
+      return projectKey;
+    }
+  }
+
+  return "";
+}
+
 function normalizeStudentData(s) {
+  const nucleus = normalizeNucleusName(s.nucleus);
+  const project = normalizeProjectKey(s.project) || inferProjectKeyFromNucleus(nucleus);
+
   return {
     ...s,
+    project,
+    nucleus,
     uniform: { ...(s.uniform || {}), items: { ...createEmptyDeliveryItems(), ...(s.uniform?.items || {}) } },
     attendanceLog: Array.isArray(s.attendanceLog) ? s.attendanceLog : [],
     absences: Array.isArray(s.absences) ? s.absences : [],
@@ -123,6 +161,31 @@ function normalizeStudentData(s) {
       enrollDate: s.extra?.enrollDate || s.startDate || "",
     },
     pcd: Boolean(s.pcd),
+  };
+}
+
+function normalizeCollaboratorRecord(record) {
+  return {
+    id: record?.id || crypto.randomUUID(),
+    studentId: record?.studentId || "",
+    studentName: record?.studentName || "",
+    nucleus: record?.nucleus || "",
+    project: normalizeProjectKey(record?.project) || inferProjectKeyFromNucleus(record?.nucleus),
+    type: record?.type || "observacao_interna",
+    text: record?.text || "",
+    createdAt: record?.createdAt || new Date().toISOString(),
+    createdBy: record?.createdBy || "",
+    collaboratorName: record?.collaboratorName || "",
+    classDate: record?.classDate || "",
+    classSchedule: record?.classSchedule || "",
+    attachment: record?.attachment
+      ? {
+          name: record.attachment.name || "",
+          type: record.attachment.type || "",
+          size: Number(record.attachment.size || 0),
+          dataUrl: record.attachment.dataUrl || "",
+        }
+      : null,
   };
 }
 
@@ -179,6 +242,7 @@ function loadData() {
     state.students = [];
     state.visitors = [];
     state.history = [];
+    state.collaboratorRecordsByProject = {};
     state.uniformStockByProject = createUniformStockByProject();
     state.classDaysByProject = createProjectCalendars();
     state.attendanceStaffByProject = createAttendanceStaffByProject();
@@ -201,6 +265,12 @@ function loadData() {
     state.visitors = Array.isArray(parsed.visitors) ? parsed.visitors : [];
     state.users = Array.isArray(parsed.users) ? parsed.users : PROJECTS.flatMap((p) => createDefaultUsersForProject(p.key));
     state.history = Array.isArray(parsed.history) ? parsed.history : [];
+    state.collaboratorRecordsByProject = Object.fromEntries(
+      Object.entries(parsed.collaboratorRecordsByProject || {}).map(([projectKey, items]) => [
+        projectKey,
+        Array.isArray(items) ? items.map(normalizeCollaboratorRecord) : [],
+      ])
+    );
     state.uniformStockByProject = parsed.uniformStockByProject || createUniformStockByProject();
     state.classDaysByProject = parsed.classDaysByProject || createProjectCalendars();
     state.attendanceStaffByProject = parsed.attendanceStaffByProject || createAttendanceStaffByProject();
@@ -234,6 +304,7 @@ function persist() {
       visitors: state.visitors,
       users: state.users,
       history: state.history,
+      collaboratorRecordsByProject: state.collaboratorRecordsByProject,
       uniformStockByProject: state.uniformStockByProject,
       snackStockByProject: state.snackStockByProject,
       classDaysByProject: state.classDaysByProject,
@@ -300,6 +371,12 @@ function saveReportPrefs() {
 /* ========= PROJECT BAG GETTERS ========= */
 function getProjectStudents(projectKey = state.currentProjectKey) {
   return state.students.filter((s) => s.project === projectKey);
+}
+function getProjectCollaboratorRecords(projectKey = state.currentProjectKey) {
+  if (!state.collaboratorRecordsByProject[projectKey]) {
+    state.collaboratorRecordsByProject[projectKey] = [];
+  }
+  return state.collaboratorRecordsByProject[projectKey];
 }
 function getScopedStudents() {
   const user = currentUser();

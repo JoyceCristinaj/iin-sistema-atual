@@ -301,13 +301,16 @@ ui.snackTodayBtn?.addEventListener("click", () => {
     if (user?.role === "professor") renderProfessorHistory(user.nucleus);
   });
 
-  // Atestado
-  ui.teacherAbsType?.addEventListener("change", () => {
-    const isAluno = (ui.teacherAbsType.value || "aluno") === "aluno";
-    ui.teacherAbsStudentWrap?.classList.toggle("hidden", !isAluno);
+  // Registros do colaborador
+  ui.professorClassDate?.addEventListener("change", () => {
+    const user = currentUser();
+    if (user?.role === "professor") {
+      hydrateProfessorScheduleOptions(user.nucleus, ui.professorClassDate?.value || "", "");
+    }
   });
 
   ui.teacherAbsSave?.addEventListener("click", onTeacherSaveAtestado);
+  ui.adminSupportTypeFilter?.addEventListener("change", renderAdminSupportRecords);
 
   // Momento do mestre (prof)
   ui.teacherMestreOpen?.addEventListener("click", onTeacherOpenMestrePDF);
@@ -624,6 +627,7 @@ renderSnackStockTab();
 hydrateWhatsStudents();
 renderDashboardChart();
 renderDashboardMiniChart();
+renderAdminSupportRecords();
 
 if (state.activeTab === "tab-admin") {
   ensureAdminExtraPanels();
@@ -661,7 +665,7 @@ function renderProfessorArea(user) {
 
   const staff = getAttendanceStaffByNucleus(user.nucleus);
   if (ui.professorClassDate) ui.professorClassDate.value = staff.classDate || "";
-  if (ui.professorClassSchedule) ui.professorClassSchedule.value = staff.classSchedule || "";
+  hydrateProfessorScheduleOptions(user.nucleus, staff.classDate || "", staff.classSchedule || "");
   if (ui.professorClassProfessorName) ui.professorClassProfessorName.value = staff.professorName || "";
   if (ui.professorClassMonitorName) ui.professorClassMonitorName.value = staff.monitorName || "";
 
@@ -673,10 +677,17 @@ function renderProfessorArea(user) {
 
   renderPlanningList(user.nucleus);
   renderProfessorHistory(user.nucleus);
+  renderTeacherSupportHistory(user.nucleus);
 
-  // combo do atestado
+  // combo do registro do colaborador
   if (ui.teacherAbsStudent) {
     ui.teacherAbsStudent.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = students.length ? "Selecione o aluno" : "Sem alunos neste núcleo";
+    ui.teacherAbsStudent.appendChild(placeholder);
+
     students
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
@@ -687,9 +698,5 @@ function renderProfessorArea(user) {
         ui.teacherAbsStudent.appendChild(opt);
       });
   }
-
-  // exibir/ocultar seletor aluno no atestado
-  const isAluno = (ui.teacherAbsType?.value || "aluno") === "aluno";
-  ui.teacherAbsStudentWrap?.classList.toggle("hidden", !isAluno);
 }
 

@@ -91,6 +91,147 @@ const PROJECT_MODALITIES = {
   supergasbras: ["Boxe", "Jiu Jitso"],
 };
 
+const NUCLEOS_AULAS = {
+  Jacarezinho: {
+    modalidades: {
+      "Muay Thai": {
+        dias: ["Segunda", "Quarta"],
+        horarios: {
+          Segunda: [
+            "15:00 às 16:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "19:00 às 20:00",
+            "20:00 às 21:00",
+          ],
+          Quarta: [
+            "15:00 às 16:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "19:00 às 20:00",
+            "20:00 às 21:00",
+          ],
+        },
+      },
+      "Jiu-Jitsu": {
+        dias: ["Terça", "Quinta"],
+        horarios: {
+          Terça: [
+            "09:00 às 10:00",
+            "10:00 às 11:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "19:00 às 20:00",
+          ],
+          Quinta: [
+            "09:00 às 10:00",
+            "10:00 às 11:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "19:00 às 20:00",
+          ],
+        },
+      },
+    },
+  },
+  Penha: {
+    modalidades: {
+      "Jiu-Jitsu": {
+        dias: ["Terça", "Quinta"],
+        horarios: {
+          Terça: [
+            "10:00 às 11:00",
+            "15:00 às 16:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "20:00 às 21:00",
+          ],
+          Quinta: [
+            "10:00 às 11:00",
+            "15:00 às 16:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "20:00 às 21:00",
+          ],
+        },
+      },
+    },
+  },
+  "Santa Cruz": {
+    modalidades: {
+      Boxe: {
+        dias: ["Terça", "Quinta"],
+        horarios: {
+          Terça: [
+            "09:00 às 10:00",
+            "10:00 às 11:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "19:00 às 20:00",
+          ],
+          Quinta: [
+            "09:00 às 10:00",
+            "10:00 às 11:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+            "18:00 às 19:00",
+            "19:00 às 20:00",
+          ],
+        },
+      },
+    },
+  },
+  "Campo Grande": {
+    modalidades: {
+      "Jiu-Jitsu": {
+        dias: ["Terça", "Quinta"],
+        horarios: {
+          Terça: [
+            "09:00 às 10:00",
+            "14:00 às 15:00",
+            "15:00 às 16:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+          ],
+          Quinta: [
+            "09:00 às 10:00",
+            "14:00 às 15:00",
+            "15:00 às 16:00",
+            "16:00 às 17:00",
+            "17:00 às 18:00",
+          ],
+        },
+      },
+    },
+  },
+  Freguesia: {
+    modalidades: {
+      "Muay Thai": {
+        dias: ["Terça", "Quinta"],
+        horariosBase: ["09:00", "15:00", "16:00", "17:00", "18:00", "19:00"],
+      },
+    },
+  },
+  Realengo: {
+    modalidades: {
+      Boxe: {
+        dias: ["Segunda", "Quarta"],
+        horariosBase: ["09:00", "10:00", "15:00", "16:00", "17:00", "18:00"],
+      },
+    },
+  },
+  Macaé: {
+    modalidades: {},
+  },
+};
+
 const STOCK_CATEGORIES = [
   { key: "camiseta", label: "Camiseta" },
   { key: "shorts", label: "Shorts" },

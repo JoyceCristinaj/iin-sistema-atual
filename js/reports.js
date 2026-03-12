@@ -605,47 +605,202 @@ function renderAlerts() {
 
 
 /* ========= PROFESSOR: ATESTADO + MOMENTO DO MESTRE ========= */
+const SUPPORT_ATTACHMENT_MAX_BYTES = 1500000;
+
+function supportRecordTypeLabel(type) {
+  if (type === "atestado_aluno") return "Atestado do aluno";
+  if (type === "atestado_colaborador") return "Atestado / justificativa do colaborador";
+  if (type === "justificativa_informal") return "Justificativa informal";
+  if (type === "imagem_responsavel") return "Foto / imagem enviada pelo responsável";
+  return "Observação interna";
+}
+
+function setTeacherSupportStatus(message, isError = false) {
+  if (!ui.teacherAbsStatus) return;
+  ui.teacherAbsStatus.textContent = message || "";
+  ui.teacherAbsStatus.style.color = isError ? "#b31d2f" : "";
+}
+
+function makeSupportRecordListItem(record, showProject = false) {
+  const li = document.createElement("li");
+  li.style.display = "grid";
+  li.style.gap = "6px";
+
+  const createdAt = new Date(record.createdAt || "");
+  const when = Number.isNaN(createdAt.getTime())
+    ? record.createdAt || "-"
+    : createdAt.toLocaleString("pt-BR");
+
+  const metaParts = [
+    showProject ? `Projeto: ${record.project || "-"}` : "",
+    `Núcleo: ${record.nucleus || "-"}`,
+    `Registrado por: ${record.collaboratorName || record.createdBy || "-"}`,
+    `Quando: ${when}`,
+  ].filter(Boolean);
+
+  const classRef = [record.classDate ? `Data da aula: ${formatDateLabel(record.classDate)}` : "", record.classSchedule ? `Horário: ${record.classSchedule}` : ""]
+    .filter(Boolean)
+    .join(" • ");
+
+  li.innerHTML = `
+    <div>
+      <strong>${escapeHtml(record.studentName || "Aluno não informado")}</strong>
+      <span class="badge">${escapeHtml(supportRecordTypeLabel(record.type))}</span>
+    </div>
+    <div class="muted">${escapeHtml(metaParts.join(" • "))}</div>
+    ${record.text ? `<div>${escapeHtml(record.text)}</div>` : ""}
+    ${classRef ? `<div class="muted">${escapeHtml(classRef)}</div>` : ""}
+  `;
+
+  if (record.attachment?.dataUrl) {
+    const actions = document.createElement("div");
+    actions.className = "toolbar compact";
+
+    const link = document.createElement("a");
+    link.className = "ghost";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.href = record.attachment.dataUrl;
+    link.textContent = `Abrir anexo: ${record.attachment.name || "arquivo"}`;
+
+    actions.appendChild(link);
+    li.appendChild(actions);
+  }
+
+  return li;
+}
+
+function renderTeacherSupportHistory(nucleus) {
+  if (!ui.teacherAbsHistory) return;
+  ui.teacherAbsHistory.innerHTML = "";
+
+  const records = getProjectCollaboratorRecords()
+    .filter((record) => record.nucleus === nucleus)
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+  if (!records.length) {
+    ui.teacherAbsHistory.innerHTML = `<li class="empty">Nenhum registro do colaborador neste núcleo.</li>`;
+    return;
+  }
+
+  records.forEach((record) => ui.teacherAbsHistory.appendChild(makeSupportRecordListItem(record)));
+}
+
+function renderAdminSupportRecords() {
+  if (!ui.adminSupportRecordsBoard) return;
+  ui.adminSupportRecordsBoard.innerHTML = "";
+
+  const filter = ui.adminSupportTypeFilter?.value || "todos";
+  const records = getProjectCollaboratorRecords()
+    .filter((record) => filter === "todos" || record.type === filter)
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+  if (!records.length) {
+    ui.adminSupportRecordsBoard.innerHTML = `<li class="empty">Nenhum aviso do colaborador neste projeto.</li>`;
+    return;
+  }
+
+  records.forEach((record) => ui.adminSupportRecordsBoard.appendChild(makeSupportRecordListItem(record, true)));
+}
+
 function onTeacherSaveAtestado() {
   const user = currentUser();
   if (!user || user.role !== "professor") return;
 
-  const type = ui.teacherAbsType?.value || "aluno";
+  const studentId = ui.teacherAbsStudent?.value || "";
+  const student = getProjectStudents().find((item) => item.id === studentId);
+  const type = ui.teacherAbsType?.value || "observacao_interna";
+  const text = ui.teacherAbsText?.value?.trim() || "";
   const file = ui.teacherAbsFile?.files?.[0];
-  if (!file) return;
+  const staff = getAttendanceStaffByNucleus(user.nucleus);
+
+  if (!student) {
+    setTeacherSupportStatus("Selecione o aluno relacionado ao registro.", true);
+    return;
+  }
+
+  if (!text && !file) {
+    setTeacherSupportStatus("Informe um texto, um anexo ou ambos para salvar o registro.", true);
+    return;
+  }
+
+  if (file && file.size > SUPPORT_ATTACHMENT_MAX_BYTES) {
+    setTeacherSupportStatus("O anexo é grande demais para armazenamento local. Use arquivo de até 1,5 MB.", true);
+    return;
+  }
+
+  const saveRecord = (attachment = null) => {
+    const createdAt = new Date().toISOString();
+    const record = normalizeCollaboratorRecord({
+      id: crypto.randomUUID(),
+      studentId: student.id,
+      studentName: student.name,
+      nucleus: student.nucleus || user.nucleus,
+      project: state.currentProjectKey,
+      type,
+      text,
+      attachment,
+      createdAt,
+      createdBy: user.username,
+      collaboratorName: staff.professorName || user.username,
+      classDate: staff.classDate || "",
+      classSchedule: ui.professorClassSchedule?.value || staff.classSchedule || "",
+    });
+
+    getProjectCollaboratorRecords().unshift(record);
+
+    if (attachment) {
+      if (!Array.isArray(student.absences)) student.absences = [];
+      student.absences.unshift({
+        id: record.id,
+        ts: createdAt,
+        name: attachment.name,
+        dataUrl: attachment.dataUrl,
+        type: record.type,
+      });
+    }
+
+    if (type !== "observacao_interna") {
+      const dateRef = staff.classDate || isoToday();
+      student.attendance = "justificado";
+      upsertAttendanceLog(student, dateRef, "justificado", {
+        supportRecordId: record.id,
+        type: record.type,
+        fileName: attachment?.name || "",
+      });
+    }
+
+    pushHistory(
+      student,
+      user,
+      "registro_colaborador",
+      `${supportRecordTypeLabel(record.type)}${record.text ? ` • ${record.text}` : attachment ? ` • ${attachment.name}` : ""}`
+    );
+    pushNucleusLog(user.nucleus, "Registro do colaborador", `${student.name} • ${supportRecordTypeLabel(record.type)}`, user);
+
+    persist();
+
+    if (ui.teacherAbsText) ui.teacherAbsText.value = "";
+    if (ui.teacherAbsFile) ui.teacherAbsFile.value = "";
+
+    render();
+    setTeacherSupportStatus("Registro salvo com sucesso.");
+  };
+
+  if (!file) {
+    saveRecord(null);
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = () => {
-    const dataUrl = String(reader.result || "");
-
-    if (type === "aluno") {
-      const sid = ui.teacherAbsStudent?.value;
-      const student = getProjectStudents().find((s) => s.id === sid);
-      if (!student) return;
-
-      if (!Array.isArray(student.absences)) student.absences = [];
-      student.absences.unshift({
-        id: crypto.randomUUID(),
-        ts: new Date().toISOString(),
-        name: file.name,
-        dataUrl,
-      });
-
-      // marca justificado na data atual da turma (ou hoje)
-      const staff = getAttendanceStaffByNucleus(user.nucleus);
-      const dateRef = staff.classDate || isoToday();
-      student.attendance = "justificado";
-      upsertAttendanceLog(student, dateRef, "justificado", { atestado: true, fileName: file.name });
-
-      pushHistory(student, user, "atestado", `Atestado anexado: ${file.name}`);
-      pushNucleusLog(user.nucleus, "Atestado aluno", `${student.name} • ${file.name}`, user);
-    } else {
-      pushNucleusLog(user.nucleus, "Atestado professor", `Arquivo: ${file.name}`, user);
-    }
-
-    persist();
-    render();
+    saveRecord({
+      name: file.name,
+      type: file.type || "",
+      size: file.size || 0,
+      dataUrl: String(reader.result || ""),
+    });
   };
-
   reader.readAsDataURL(file);
 }
 
