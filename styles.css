@@ -2222,3 +2222,25 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
   overflow: hidden !important;
   pointer-events: none !important;
 }
+
+#adminLessonForm label:has(#lessonDesc),
+#adminLessonForm label:has(#lessonExtra),
+#adminWeekForm label:has(#weekSummary),
+#adminWeekForm label:has(#weekNotes) {
+  grid-column: 1 / -1;
+}
+
+#adminLessonForm > div:last-child,
+#adminWeekForm > div:last-child {
+  grid-column: 1 / -1;
+}
+
+#adminLessonsTableBody td,
+#adminWeeksTableBody td {
+  vertical-align: top;
+}
+
+#adminLessonsTableBody button,
+#adminWeeksTableBody button {
+  white-space: nowrap;
+}

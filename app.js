@@ -358,6 +358,7 @@ const state = {
 
   // Aulas
   lessonsByProject: {},
+  weeksByProject: {},
   lessonUI: { selectedId: null, search: "", category: "", level: "" },
 
   sessionUserId: null,
@@ -546,27 +547,213 @@ tabPages: [
   pdfFrame: el("pdfFrame"),
 };
 
-// ✅ AULAS (EAD) - categorias fixas
-const LESSON_CATEGORIES = [
-  "Boxe",
-  "Muay Thai",
-  "Jiu-Jitsu",
-  "MMA (introdução)",
-  "Defesa Pessoal",
-  "Wrestling (noções)",
-  "Judô (quedas básicas)",
-  "Fundamentos",
-  "Técnicas",
-  "Combinações",
-  "Drills (repetição)",
-  "Alongamento",
-  "Mobilidade",
-  "Condicionamento",
-  "Coordenação",
-  "Aeróbico / Cardio",
-  "Força (base)",
-  "Core (abdômen)",
-];
+// ✅ AULAS (EAD) - modalidades canônicas e regras pedagógicas
+const EAD_MODALITIES = ["Boxe", "Muay Thai", "Jiu Jitso"];
+const LESSON_CATEGORIES = EAD_MODALITIES.slice();
+
+const EAD_PEDAGOGY = Object.freeze({
+  Boxe: { maxWeeks: 52, maxLessonsPerWeek: 2 },
+  "Muay Thai": { maxWeeks: 52, maxLessonsPerWeek: 2 },
+  "Jiu Jitso": { maxWeeks: 54, maxLessonsPerWeek: 3 },
+});
+
+const EAD_ALLOWED_CATEGORIES_BY_NUCLEUS = Object.freeze({
+  Jacarezinho: ["Muay Thai", "Jiu Jitso"],
+  Penha: ["Jiu Jitso"],
+  "Santa Cruz": ["Boxe"],
+  "Campo Grande": ["Jiu Jitso"],
+  Freguesia: ["Jiu Jitso"],
+  Realengo: ["Boxe"],
+});
+
+function normalizeEadCategory(rawCategory) {
+  const text = normText(rawCategory);
+  if (!text) return "";
+  if (text.includes("box")) return "Boxe";
+  if (text.includes("muay")) return "Muay Thai";
+  if (text.includes("jiu")) return "Jiu Jitso";
+  return "";
+}
+
+function getEadPedagogy(category) {
+  const normalized = normalizeEadCategory(category);
+  return EAD_PEDAGOGY[normalized] || EAD_PEDAGOGY["Muay Thai"];
+}
+
+function getAllowedEadCategoriesForUser(user = currentUser(), projectKey = state.currentProjectKey) {
+  if (!user || ["admin", "gestao", "supervisao"].includes(user.role)) return EAD_MODALITIES.slice();
+  if (user.role !== "professor") return EAD_MODALITIES.slice();
+
+  const explicit = EAD_ALLOWED_CATEGORIES_BY_NUCLEUS[user.nucleus];
+  if (Array.isArray(explicit) && explicit.length) return explicit.slice();
+
+  return Array.from(
+    new Set((PROJECT_MODALITIES[projectKey] || []).map(normalizeEadCategory).filter(Boolean))
+  );
+}
+
+function canUserAccessEadCategory(category, user = currentUser(), projectKey = state.currentProjectKey) {
+  const normalized = normalizeEadCategory(category);
+  if (!normalized) return false;
+  return getAllowedEadCategoriesForUser(user, projectKey).includes(normalized);
+}
+
+function findNextLessonSlot(usedSlots, category) {
+  const rule = getEadPedagogy(category);
+  for (let week = 1; week <= rule.maxWeeks; week += 1) {
+    for (let lessonOrder = 1; lessonOrder <= rule.maxLessonsPerWeek; lessonOrder += 1) {
+      const slotKey = `${week}:${lessonOrder}`;
+      if (!usedSlots.has(slotKey)) return { week, lessonOrder };
+    }
+  }
+  return null;
+}
+
+function ensureEadWeeksBag(projectKey = state.currentProjectKey) {
+  if (!state.weeksByProject[projectKey]) state.weeksByProject[projectKey] = [];
+  if (!Array.isArray(state.weeksByProject[projectKey])) state.weeksByProject[projectKey] = [];
+  return state.weeksByProject[projectKey];
+}
+
+function sanitizeEadWeekEntry(entry, projectKey = state.currentProjectKey) {
+  const category = normalizeEadCategory(entry?.category);
+  if (!category) return null;
+
+  const rule = getEadPedagogy(category);
+  const week = Number.parseInt(entry?.week, 10);
+  if (!Number.isInteger(week) || week < 1 || week > rule.maxWeeks) return null;
+
+  return {
+    id: entry?.id || crypto.randomUUID(),
+    project: entry?.project || projectKey,
+    category,
+    week,
+    title: String(entry?.title || "").trim(),
+    summary: String(entry?.summary || "").trim(),
+    notes: String(entry?.notes || "").trim(),
+    updatedAt: entry?.updatedAt || new Date().toISOString(),
+  };
+}
+
+function sanitizeEadLessonEntry(entry, projectKey = state.currentProjectKey) {
+  const normalizedCategory = normalizeEadCategory(entry?.category);
+  const rawCategory = String(entry?.category || "").trim();
+  const category = normalizedCategory || rawCategory;
+  const rule = normalizedCategory ? getEadPedagogy(normalizedCategory) : null;
+
+  const rawWeek = Number.parseInt(entry?.week, 10);
+  const rawOrder = Number.parseInt(entry?.lessonOrder ?? entry?.order, 10);
+
+  const hasValidWeek = Boolean(rule && Number.isInteger(rawWeek) && rawWeek >= 1 && rawWeek <= rule.maxWeeks);
+  const hasValidOrder = Boolean(
+    rule &&
+    Number.isInteger(rawOrder) &&
+    rawOrder >= 1 &&
+    rawOrder <= rule.maxLessonsPerWeek
+  );
+
+  return {
+    id: entry?.id || crypto.randomUUID(),
+    project: entry?.project || projectKey,
+    title: String(entry?.title || "").trim() || "Aula sem título",
+    category,
+    level: String(entry?.level || "").trim(),
+    week: hasValidWeek ? rawWeek : null,
+    lessonOrder: hasValidOrder ? rawOrder : null,
+    desc: String(entry?.desc || "").trim(),
+    extra: String(entry?.extra || "").trim(),
+    provider: String(entry?.provider || "").trim(),
+    embedUrl: String(entry?.embedUrl || "").trim(),
+    thumb: String(entry?.thumb || "").trim(),
+    createdAt: entry?.createdAt || new Date().toISOString(),
+  };
+}
+
+function normalizeEadData(projectKey = state.currentProjectKey) {
+  const weekBag = ensureEadWeeksBag(projectKey);
+  const weekMap = new Map();
+
+  weekBag.forEach((entry) => {
+    const sanitized = sanitizeEadWeekEntry(entry, projectKey);
+    if (!sanitized) return;
+    weekMap.set(`${sanitized.category}|${sanitized.week}`, sanitized);
+  });
+
+  state.weeksByProject[projectKey] = Array.from(weekMap.values()).sort((a, b) => {
+    const byCategory = a.category.localeCompare(b.category, "pt-BR");
+    if (byCategory !== 0) return byCategory;
+    return a.week - b.week;
+  });
+
+  const rawLessons = Array.isArray(state.lessonsByProject[projectKey]) ? state.lessonsByProject[projectKey] : [];
+  const canonicalByCategory = Object.fromEntries(EAD_MODALITIES.map((category) => [category, []]));
+  const legacyLessons = [];
+
+  rawLessons.forEach((entry) => {
+    const sanitized = sanitizeEadLessonEntry(entry, projectKey);
+    const canonicalCategory = normalizeEadCategory(sanitized.category);
+
+    if (!canonicalCategory) {
+      legacyLessons.push(sanitized);
+      return;
+    }
+
+    sanitized.category = canonicalCategory;
+    canonicalByCategory[canonicalCategory].push(sanitized);
+  });
+
+  const normalizedLessons = [];
+
+  EAD_MODALITIES.forEach((category) => {
+    const lessons = canonicalByCategory[category]
+      .slice()
+      .sort((a, b) =>
+        String(a.createdAt || "").localeCompare(String(b.createdAt || "")) ||
+        String(a.title || "").localeCompare(String(b.title || ""), "pt-BR")
+      );
+
+    const usedSlots = new Set();
+
+    lessons.forEach((lesson) => {
+      if (lesson.week && lesson.lessonOrder) {
+        const key = `${lesson.week}:${lesson.lessonOrder}`;
+        if (!usedSlots.has(key)) {
+          usedSlots.add(key);
+          normalizedLessons.push(lesson);
+          return;
+        }
+      }
+
+      const nextSlot = findNextLessonSlot(usedSlots, category);
+      if (nextSlot) {
+        lesson.week = nextSlot.week;
+        lesson.lessonOrder = nextSlot.lessonOrder;
+        usedSlots.add(`${nextSlot.week}:${nextSlot.lessonOrder}`);
+      } else {
+        lesson.week = null;
+        lesson.lessonOrder = null;
+      }
+
+      normalizedLessons.push(lesson);
+    });
+  });
+
+  state.lessonsByProject[projectKey] = normalizedLessons
+    .concat(legacyLessons)
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+
+window.IIN_EAD = {
+  STORAGE_KEY,
+  SESSION_KEY,
+  categories: EAD_MODALITIES.slice(),
+  pedagogy: EAD_PEDAGOGY,
+  allowedByNucleus: EAD_ALLOWED_CATEGORIES_BY_NUCLEUS,
+  normalizeCategory: normalizeEadCategory,
+  getPedagogy: getEadPedagogy,
+  getAllowedCategoriesForUser: getAllowedEadCategoriesForUser,
+  canUserAccessCategory: canUserAccessEadCategory,
+};
 
 function hydrateAulasCategoryOptions() {
   if (!ui.aulasCategory) return;
@@ -620,7 +807,10 @@ function init() {
   hydratePrintFieldsUI();
   ensureAdminExtraPanels();
   hydrateLessonAdminCategorySelect();
+  clearLessonForm("Cadastre aulas por modalidade, semana e ordem pedagÃ³gica.");
+  clearWeekForm("Cadastre o resumo pedagÃ³gico da semana.");
   renderAdminLessonsTable();
+  renderAdminWeeksTable();
   renderLessonsGrid();
   hydrateSupervisaoNucleo();
   renderSupervisaoTables();
@@ -1339,6 +1529,7 @@ function loadData() {
     state.mestreDocsByProject = createMestreDocsByProject();
     state.settingsByProject = createSettingsByProject();
     state.snackStockByProject = createSnackStockByProject();
+    state.weeksByProject = {};
     persist();
     return;
   }
@@ -1346,6 +1537,7 @@ function loadData() {
   try {
     const parsed = JSON.parse(raw);
     state.lessonsByProject = parsed.lessonsByProject || {};
+    state.weeksByProject = parsed.weeksByProject || {};
     state.students = Array.isArray(parsed.students) ? parsed.students.map(normalizeStudentData) : [];
     state.visitors = Array.isArray(parsed.visitors) ? parsed.visitors : [];
     state.users = Array.isArray(parsed.users) ? parsed.users : PROJECTS.flatMap((p) => createDefaultUsersForProject(p.key));
@@ -1371,6 +1563,7 @@ function loadData() {
   ensureNucleusLogs();
   ensureMestreDocs();
   ensureProjectSettings();
+  PROJECTS.forEach((project) => normalizeEadData(project.key));
   persist();
 }
 
@@ -1395,6 +1588,7 @@ function persist() {
 
       // ✅ NOVO
       lessonsByProject: state.lessonsByProject,
+      weeksByProject: state.weeksByProject,
     })
   );
 }
@@ -1778,13 +1972,25 @@ function ensureAdminExtraPanels() {
         <span class="badge">Admin</span>
       </div>
 
-      <form id="adminLessonForm" class="grid-form">
+      <form id="adminLessonForm" class="grid-form three" data-edit-id="">
         <label>Título da aula
           <input id="lessonTitle" type="text" placeholder="Ex: Aula 01 — Bases do Boxe" required />
         </label>
 
-        <label>Categoria
+        <label>Modalidade
           <select id="lessonCategory">
+            <option value="">Selecione</option>
+          </select>
+        </label>
+
+        <label>Semana
+          <select id="lessonWeek">
+            <option value="">Selecione</option>
+          </select>
+        </label>
+
+        <label>Ordem da aula
+          <select id="lessonOrder">
             <option value="">Selecione</option>
           </select>
         </label>
@@ -1810,10 +2016,10 @@ function ensureAdminExtraPanels() {
   <textarea id="lessonExtra" rows="3" placeholder="Materiais, orientações, observações e informações complementares da aula"></textarea>
 </label>
 
-<div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+<div style="grid-column:1 / -1; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
   <button type="submit" class="primary">Salvar aula</button>
   <button type="button" id="lessonClear" class="ghost">Limpar</button>
-  <span id="lessonStatus" class="report-status">Cadastre aulas para aparecerem na plataforma.</span>
+  <span id="lessonStatus" class="report-status">Cadastre aulas por modalidade, semana e ordem pedagÃ³gica.</span>
 </div>
       </form>
 
@@ -1822,19 +2028,82 @@ function ensureAdminExtraPanels() {
           <thead>
             <tr>
               <th>Título</th>
-              <th>Categoria</th>
+              <th>Modalidade</th>
+              <th>Semana</th>
+              <th>Ordem</th>
               <th>Nível</th>
               <th>Fonte</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody id="adminLessonsTableBody">
-            <tr><td colspan="5" class="empty">Sem aulas cadastradas.</td></tr>
+            <tr><td colspan="7" class="empty">Sem aulas cadastradas.</td></tr>
           </tbody>
         </table>
       </div>
     `;
     adminArea.appendChild(panel2);
+  }
+  if (!el("adminWeekForm")) {
+    const panel3 = document.createElement("section");
+    panel3.className = "panel";
+    panel3.style.marginTop = "12px";
+    panel3.innerHTML = `
+      <div class="panel-title-row">
+        <h2>Admin • Semanas EAD</h2>
+        <span class="badge">Pedagogico</span>
+      </div>
+
+      <form id="adminWeekForm" class="grid-form two" data-edit-key="">
+        <label>Modalidade
+          <select id="weekCategory">
+            <option value="">Selecione</option>
+          </select>
+        </label>
+
+        <label>Semana
+          <select id="weekNumber">
+            <option value="">Selecione</option>
+          </select>
+        </label>
+
+        <label>Titulo opcional
+          <input id="weekTitle" type="text" placeholder="Ex: Bases, deslocamento e leitura de jogo" />
+        </label>
+
+        <label style="grid-column:1 / -1">Resumo da semana
+          <textarea id="weekSummary" rows="4" placeholder="Texto principal que aparece no accordion da semana." required></textarea>
+        </label>
+
+        <label style="grid-column:1 / -1">Objetivos / observacoes / texto livre
+          <textarea id="weekNotes" rows="4" placeholder="Objetivos pedagogicos, observacoes e orientacoes complementares."></textarea>
+        </label>
+
+        <div style="grid-column:1 / -1; display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+          <button type="submit" class="primary">Salvar semana</button>
+          <button type="button" id="weekClear" class="ghost">Limpar</button>
+          <span id="weekStatus" class="report-status">Cadastre o resumo pedagogico que aparecera dentro da semana no EAD.</span>
+        </div>
+      </form>
+
+      <div class="table-wrapper" style="margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>Modalidade</th>
+              <th>Semana</th>
+              <th>Titulo</th>
+              <th>Resumo</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody id="adminWeeksTableBody">
+            <tr><td colspan="5" class="empty">Sem resumos semanais cadastrados.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+    adminArea.appendChild(panel3);
   }
 }
 
@@ -1991,8 +2260,104 @@ function onLogout() {
 
 function hydrateLessonAdminCategorySelect() {
   const sel = el("lessonCategory");
-  if (!sel) return;
-  sel.innerHTML = `<option value="">Selecione</option>` + LESSON_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  const weekCategory = el("weekCategory");
+
+  [sel, weekCategory].forEach((node) => {
+    if (!node) return;
+    const current = node.value || "";
+    node.innerHTML = `<option value="">Selecione</option>` +
+      LESSON_CATEGORIES.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
+    if ([...node.options].some((opt) => opt.value === current)) node.value = current;
+  });
+
+  syncLessonWeekAndOrderOptions(true);
+  syncWeekNumberOptions(true);
+}
+
+function hydrateNumericSelect(node, max, current = "", placeholder = "Selecione") {
+  if (!node) return;
+  node.innerHTML = `<option value="">${placeholder}</option>` +
+    Array.from({ length: Math.max(0, max) }, (_, idx) => {
+      const value = String(idx + 1);
+      return `<option value="${value}">${value}</option>`;
+    }).join("");
+
+  if ([...node.options].some((opt) => opt.value === String(current || ""))) {
+    node.value = String(current);
+  }
+}
+
+function syncLessonWeekAndOrderOptions(keepSelection = false) {
+  const category = normalizeEadCategory(el("lessonCategory")?.value || "");
+  const weekNode = el("lessonWeek");
+  const orderNode = el("lessonOrder");
+  const currentWeek = keepSelection ? weekNode?.value || "" : "";
+  const currentOrder = keepSelection ? orderNode?.value || "" : "";
+  const rule = category ? getEadPedagogy(category) : null;
+
+  hydrateNumericSelect(weekNode, rule?.maxWeeks || 0, currentWeek);
+  hydrateNumericSelect(orderNode, rule?.maxLessonsPerWeek || 0, currentOrder);
+}
+
+function syncWeekNumberOptions(keepSelection = false) {
+  const category = normalizeEadCategory(el("weekCategory")?.value || "");
+  const weekNode = el("weekNumber");
+  const currentWeek = keepSelection ? weekNode?.value || "" : "";
+  const rule = category ? getEadPedagogy(category) : null;
+  hydrateNumericSelect(weekNode, rule?.maxWeeks || 0, currentWeek);
+}
+
+function clearLessonForm(message = "FormulÃ¡rio limpo.") {
+  const form = el("adminLessonForm");
+  form?.reset();
+  if (form) form.dataset.editId = "";
+  syncLessonWeekAndOrderOptions(false);
+  const status = el("lessonStatus");
+  if (status) status.textContent = message;
+}
+
+function fillLessonForm(lesson) {
+  const form = el("adminLessonForm");
+  if (!form || !lesson) return;
+
+  form.dataset.editId = lesson.id || "";
+  el("lessonTitle").value = lesson.title || "";
+  el("lessonCategory").value = normalizeEadCategory(lesson.category) || "";
+  syncLessonWeekAndOrderOptions(false);
+  el("lessonWeek").value = lesson.week ? String(lesson.week) : "";
+  el("lessonOrder").value = lesson.lessonOrder ? String(lesson.lessonOrder) : "";
+  el("lessonLevel").value = lesson.level || "";
+  el("lessonUrl").value = lesson.originalUrl || lesson.embedUrl || "";
+  el("lessonDesc").value = lesson.desc || "";
+  el("lessonExtra").value = lesson.extra || "";
+
+  const status = el("lessonStatus");
+  if (status) status.textContent = `Editando ${lesson.title}. Salve para atualizar o registro.`;
+}
+
+function clearWeekForm(message = "FormulÃ¡rio limpo.") {
+  const form = el("adminWeekForm");
+  form?.reset();
+  if (form) form.dataset.editKey = "";
+  syncWeekNumberOptions(false);
+  const status = el("weekStatus");
+  if (status) status.textContent = message;
+}
+
+function fillWeekForm(entry) {
+  const form = el("adminWeekForm");
+  if (!form || !entry) return;
+
+  form.dataset.editKey = `${entry.category}|${entry.week}`;
+  el("weekCategory").value = entry.category || "";
+  syncWeekNumberOptions(false);
+  el("weekNumber").value = String(entry.week || "");
+  el("weekTitle").value = entry.title || "";
+  el("weekSummary").value = entry.summary || "";
+  el("weekNotes").value = entry.notes || "";
+
+  const status = el("weekStatus");
+  if (status) status.textContent = `Editando ${entry.category} • Semana ${entry.week}.`;
 }
 
 function renderLessonsGrid() {
@@ -2107,21 +2472,33 @@ function renderAdminLessonsTable() {
   const body = el("adminLessonsTableBody");
   if (!body) return;
 
-  const lessons = ensureLessonsBag().slice();
+  const lessons = ensureLessonsBag()
+    .slice()
+    .sort((a, b) =>
+      String(normalizeEadCategory(a.category) || a.category || "").localeCompare(
+        String(normalizeEadCategory(b.category) || b.category || ""),
+        "pt-BR"
+      ) ||
+      Number(a.week || 0) - Number(b.week || 0) ||
+      Number(a.lessonOrder || 0) - Number(b.lessonOrder || 0)
+    );
 
   if (!lessons.length) {
-    body.innerHTML = `<tr><td colspan="5" class="empty">Sem aulas cadastradas.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="empty">Sem aulas cadastradas.</td></tr>`;
     return;
   }
 
   body.innerHTML = lessons.map((a) => `
     <tr>
       <td>${escapeHtml(a.title)}</td>
-      <td>${escapeHtml(a.category || "-")}</td>
+      <td>${escapeHtml(normalizeEadCategory(a.category) || "-")}</td>
+      <td>${escapeHtml(a.week || "-")}</td>
+      <td>${escapeHtml(a.lessonOrder || "-")}</td>
       <td>${escapeHtml(a.level || "-")}</td>
       <td>${escapeHtml(a.provider)}</td>
       <td style="display:flex; gap:8px; flex-wrap:wrap">
         <button type="button" class="small-btn" data-open="${a.id}">Abrir</button>
+        <button type="button" class="ghost" data-edit="${a.id}">Editar</button>
         <button type="button" class="ghost" data-del="${a.id}">Excluir</button>
       </td>
     </tr>
@@ -2130,7 +2507,16 @@ function renderAdminLessonsTable() {
   body.querySelectorAll("[data-open]").forEach((btn) => {
     btn.addEventListener("click", () => {
       setActiveTab("tab-aulas");
-      openLesson(btn.getAttribute("data-open"));
+      window.openEadLessonById?.(btn.getAttribute("data-open"));
+    });
+  });
+
+  body.querySelectorAll("[data-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lesson = ensureLessonsBag().find((item) => item.id === btn.getAttribute("data-edit"));
+      if (!lesson) return;
+      fillLessonForm(lesson);
+      el("lessonTitle")?.focus();
     });
   });
 
@@ -2140,7 +2526,58 @@ function renderAdminLessonsTable() {
       state.lessonsByProject[state.currentProjectKey] = ensureLessonsBag().filter((x) => x.id !== id);
       persist();
       renderAdminLessonsTable();
+      renderAdminWeeksTable();
       renderLessonsGrid();
+    });
+  });
+}
+
+function renderAdminWeeksTable() {
+  const body = el("adminWeeksTableBody");
+  if (!body) return;
+
+  const weeks = ensureEadWeeksBag()
+    .slice()
+    .sort((a, b) => a.category.localeCompare(b.category, "pt-BR") || a.week - b.week);
+
+  if (!weeks.length) {
+    body.innerHTML = `<tr><td colspan="5" class="empty">Sem resumos semanais cadastrados.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = weeks.map((entry) => `
+    <tr>
+      <td>${escapeHtml(entry.category)}</td>
+      <td>${entry.week}</td>
+      <td>${escapeHtml(entry.title || "-")}</td>
+      <td>${escapeHtml((entry.summary || "").slice(0, 140) || "-")}</td>
+      <td style="display:flex; gap:8px; flex-wrap:wrap">
+        <button type="button" class="small-btn" data-week-edit="${entry.category}|${entry.week}">Editar</button>
+        <button type="button" class="ghost" data-week-del="${entry.category}|${entry.week}">Excluir</button>
+      </td>
+    </tr>
+  `).join("");
+
+  body.querySelectorAll("[data-week-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const [category, weekText] = String(btn.getAttribute("data-week-edit") || "").split("|");
+      const week = Number.parseInt(weekText, 10);
+      const entry = ensureEadWeeksBag().find((item) => item.category === category && item.week === week);
+      if (!entry) return;
+      fillWeekForm(entry);
+      el("weekTitle")?.focus();
+    });
+  });
+
+  body.querySelectorAll("[data-week-del]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const [category, weekText] = String(btn.getAttribute("data-week-del") || "").split("|");
+      const week = Number.parseInt(weekText, 10);
+      state.weeksByProject[state.currentProjectKey] = ensureEadWeeksBag().filter(
+        (item) => !(item.category === category && item.week === week)
+      );
+      persist();
+      renderAdminWeeksTable();
     });
   });
 }
@@ -2265,52 +2702,168 @@ ui.snackTodayBtn?.addEventListener("click", () => {
   });
 
   // ✅ AULAS: admin cadastro
-  el("adminLessonForm")?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const status = el("lessonStatus");
+  el("lessonCategory")?.addEventListener("change", () => syncLessonWeekAndOrderOptions(false));
+  el("weekCategory")?.addEventListener("change", () => syncWeekNumberOptions(false));
 
-  const title = el("lessonTitle")?.value?.trim() || "";
-  const category = el("lessonCategory")?.value || "";
-  const level = el("lessonLevel")?.value || "";
-  const url = el("lessonUrl")?.value || "";
-  const desc = el("lessonDesc")?.value?.trim() || "";
-  const extra = el("lessonExtra")?.value?.trim() || "";
+  el("adminWeekForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
 
-  const parsed = normalizeVideoUrl(url);
-  if (!parsed.ok) {
-    if (status) status.textContent = parsed.error;
-    return;
-  }
+    const form = e.currentTarget;
+    const status = el("weekStatus");
+    const editKey = form?.dataset?.editKey || "";
+    const category = normalizeEadCategory(el("weekCategory")?.value || "");
+    const week = Number.parseInt(el("weekNumber")?.value || "", 10);
+    const title = el("weekTitle")?.value?.trim() || "";
+    const summary = el("weekSummary")?.value?.trim() || "";
+    const notes = el("weekNotes")?.value?.trim() || "";
 
-  const lesson = {
-  id: crypto.randomUUID(),
-  title,
-  category,
-  level,
-  desc,
-  extra,
-  provider: parsed.provider,
-  embedUrl: parsed.embedUrl,
-  thumb: parsed.thumb,
-  createdAt: new Date().toISOString(),
-  project: state.currentProjectKey,
-};
+    if (!category) {
+      if (status) status.textContent = "Selecione uma modalidade para a semana.";
+      return;
+    }
 
-  ensureLessonsBag().unshift(lesson);
-  persist();
+    const rule = getEadPedagogy(category);
+    if (!Number.isInteger(week) || week < 1 || week > rule.maxWeeks) {
+      if (status) status.textContent = `Semana invalida para ${category}. Use de 1 a ${rule.maxWeeks}.`;
+      return;
+    }
 
-  if (status) status.textContent = "Aula salva ✅";
-  e.target.reset();
+    if (!summary) {
+      if (status) status.textContent = "Preencha o resumo principal da semana.";
+      return;
+    }
 
-  renderAdminLessonsTable();
-  renderLessonsGrid();
-});
+    const list = ensureEadWeeksBag();
+    const editingEntry = editKey
+      ? list.find((item) => `${item.category}|${item.week}` === editKey)
+      : null;
+    const currentEntry = list.find((item) => item.category === category && item.week === week);
+    const normalizedWeek = sanitizeEadWeekEntry({
+      id: editingEntry?.id || currentEntry?.id || crypto.randomUUID(),
+      project: state.currentProjectKey,
+      category,
+      week,
+      title,
+      summary,
+      notes,
+      updatedAt: new Date().toISOString(),
+    });
 
-  el("lessonClear")?.addEventListener("click", () => {
-    el("adminLessonForm")?.reset();
-    const status = el("lessonStatus");
-    if (status) status.textContent = "Formulário limpo.";
+    const editingIdx = editKey
+      ? list.findIndex((item) => `${item.category}|${item.week}` === editKey)
+      : -1;
+
+    if (editingIdx >= 0) {
+      list.splice(editingIdx, 1);
+    }
+
+    const replaceIdx = list.findIndex((item) => item.category === category && item.week === week);
+    if (replaceIdx >= 0) list[replaceIdx] = { ...list[replaceIdx], ...normalizedWeek };
+    else list.unshift(normalizedWeek);
+
+    normalizeEadData(state.currentProjectKey);
+    persist();
+
+    clearWeekForm(currentEntry || editingEntry ? "Semana atualizada com sucesso." : "Semana salva com sucesso.");
+    renderAdminWeeksTable();
   });
+
+  el("weekClear")?.addEventListener("click", () => {
+    clearWeekForm();
+  });
+
+  el("adminLessonForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const form = e.currentTarget;
+    const status = el("lessonStatus");
+    const editId = form?.dataset?.editId || "";
+
+    const title = el("lessonTitle")?.value?.trim() || "";
+    const category = normalizeEadCategory(el("lessonCategory")?.value || "");
+    const week = Number.parseInt(el("lessonWeek")?.value || "", 10);
+    const lessonOrder = Number.parseInt(el("lessonOrder")?.value || "", 10);
+    const level = el("lessonLevel")?.value || "";
+    const url = el("lessonUrl")?.value || "";
+    const desc = el("lessonDesc")?.value?.trim() || "";
+    const extra = el("lessonExtra")?.value?.trim() || "";
+
+    if (!title || !category) {
+      if (status) status.textContent = "Informe pelo menos o titulo e a modalidade da aula.";
+      return;
+    }
+
+    const rule = getEadPedagogy(category);
+    if (!Number.isInteger(week) || week < 1 || week > rule.maxWeeks) {
+      if (status) status.textContent = `Semana invalida para ${category}. Use de 1 a ${rule.maxWeeks}.`;
+      return;
+    }
+
+    if (!Number.isInteger(lessonOrder) || lessonOrder < 1 || lessonOrder > rule.maxLessonsPerWeek) {
+      if (status) status.textContent = `Ordem invalida para ${category}. Use de 1 a ${rule.maxLessonsPerWeek}.`;
+      return;
+    }
+
+    const conflictingLesson = ensureLessonsBag().find((lesson) =>
+      lesson.id !== editId &&
+      normalizeEadCategory(lesson.category) === category &&
+      Number(lesson.week) === week &&
+      Number(lesson.lessonOrder) === lessonOrder
+    );
+
+    if (conflictingLesson) {
+      if (status) status.textContent = `Ja existe uma aula em ${category} • Semana ${week} • Ordem ${lessonOrder}.`;
+      return;
+    }
+
+    const parsed = normalizeVideoUrl(url);
+    if (!parsed.ok) {
+      if (status) status.textContent = parsed.error;
+      return;
+    }
+
+    const currentList = ensureLessonsBag();
+    const existingLesson = editId ? currentList.find((lesson) => lesson.id === editId) : null;
+
+    const lesson = {
+      id: existingLesson?.id || crypto.randomUUID(),
+      title,
+      category,
+      level,
+      week,
+      lessonOrder,
+      desc,
+      extra,
+      provider: parsed.provider,
+      embedUrl: parsed.embedUrl,
+      thumb: parsed.thumb,
+      createdAt: existingLesson?.createdAt || new Date().toISOString(),
+      project: state.currentProjectKey,
+    };
+
+    if (existingLesson) {
+      const idx = currentList.findIndex((item) => item.id === existingLesson.id);
+      if (idx >= 0) currentList[idx] = lesson;
+    } else {
+      currentList.unshift(lesson);
+    }
+
+    normalizeEadData(state.currentProjectKey);
+    persist();
+
+    clearLessonForm(existingLesson ? "Aula atualizada com sucesso." : "Aula salva com sucesso.");
+    renderAdminLessonsTable();
+    renderAdminWeeksTable();
+    renderLessonsGrid();
+  });
+
+
+  el("lessonClear")?.addEventListener("click", (e) => {
+    e.stopImmediatePropagation();
+    clearLessonForm();
+  });
+
 
   // Gestão: núcleo altera horários
   el("studentNucleus")?.addEventListener("change", hydrateStudentScheduleOptions);
@@ -4803,6 +5356,9 @@ renderDashboardMiniChart();
 
 if (state.activeTab === "tab-admin") {
   ensureAdminExtraPanels();
+  hydrateLessonAdminCategorySelect();
+  renderAdminLessonsTable();
+  renderAdminWeeksTable();
   renderAdminMestreTable();
   bindCollapsiblePanels();
 
@@ -4816,6 +5372,8 @@ if (state.activeTab === "tab-admin") {
     }
   });
 } else {
+  renderAdminLessonsTable();
+  renderAdminWeeksTable();
   renderAdminMestreTable();
 }
 
