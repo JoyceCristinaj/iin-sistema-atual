@@ -68,9 +68,55 @@
         </div>
 
         <label>Senha</label>
-        <div class="input-icon">
-          <input id="loginPassword" type="password" placeholder="Digite sua senha" autocomplete="current-password" />
-        </div>
+<div style="position: relative; width: 100%;">
+  <input
+    id="loginPassword"
+    type="password"
+    placeholder="Digite sua senha"
+    autocomplete="current-password"
+    style="width: 100%; padding-right: 48px;"
+  />
+
+  <button
+    type="button"
+    id="toggleLoginPassword"
+    aria-label="Mostrar senha"
+    style="
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #111;
+      z-index: 10;
+    "
+  >
+    <svg id="eyeOpenIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2.45448 13.8008C1.84656 12.6796 1.84656 11.3204 2.45447 10.1992C4.29523 6.80404 7.87965 4.5 11.9999 4.5C16.1202 4.5 19.7046 6.80404 21.5454 10.1992C22.1533 11.3204 22.1533 12.6796 21.5454 13.8008C19.7046 17.196 16.1202 19.5 11.9999 19.5C7.87965 19.5 4.29523 17.196 2.45448 13.8008Z" stroke="#111" stroke-width="1.8"/>
+      <path d="M15.0126 11.9551C15.0126 13.6119 13.6695 14.9551 12.0126 14.9551C10.3558 14.9551 9.01263 13.6119 9.01263 11.9551C9.01263 10.2982 10.3558 8.95508 12.0126 8.95508C13.6695 8.95508 15.0126 10.2982 15.0126 11.9551Z" stroke="#111" stroke-width="1.8"/>
+    </svg>
+
+    <svg id="eyeClosedIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+      <g clip-path="url(#clip0_eye_closed)">
+        <path d="M13.9 14.7C13.3 15.3 12.6 15.6 11.8 15.6C11 15.6 10.2 15.3 9.70005 14.7C9.10005 14.1 8.80005 13.4 8.80005 12.6C8.80005 11.8 9.10005 11 9.70005 10.5L11.8 12.6L13.9 14.7Z" stroke="#111" stroke-width="1.8"/>
+        <path d="M4 4.7998L19.6 20.3998" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M17.7 18.4998C16 19.5998 14 20.1998 11.8 20.1998C7.70003 20.1998 4.10002 17.8998 2.30002 14.4998C1.60002 13.3998 1.60002 11.9998 2.30002 10.8998C3.20002 9.19981 4.50002 7.7998 6.10002 6.7998" stroke="#111" stroke-width="1.8"/>
+        <path d="M8.40002 5.7001C9.50002 5.3001 10.6 5.1001 11.8 5.1001C15.9 5.1001 19.5 7.4001 21.3 10.8001C21.9 11.9001 21.9 13.3001 21.3 14.4001C20.8 15.3001 20.2 16.1001 19.5 16.8001" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
+      </g>
+      <defs>
+        <clipPath id="clip0_eye_closed">
+          <rect width="21.6" height="17.2" fill="white" transform="translate(1 4)"/>
+        </clipPath>
+      </defs>
+    </svg>
+  </button>
+</div>
 
         <button type="submit" class="primary">Entrar</button>
         <p id="loginMessage" class="report-status"></p>
@@ -1322,5 +1368,23 @@
   <script defer src="ead/ead.js"></script>
   <script defer src="fila.js"></script>
   <script defer src="app.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("loginPassword");
+    const button = document.getElementById("toggleLoginPassword");
+    const eyeOpen = document.getElementById("eyeOpenIcon");
+    const eyeClosed = document.getElementById("eyeClosedIcon");
+
+    if (input && button) {
+      button.addEventListener("click", function () {
+        const hidden = input.type === "password";
+        input.type = hidden ? "text" : "password";
+        eyeOpen.style.display = hidden ? "none" : "block";
+        eyeClosed.style.display = hidden ? "block" : "none";
+      });
+    }
+  });
+</script>
 </body>
 </html>
