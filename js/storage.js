@@ -1,0 +1,416 @@
+"use strict";
+
+const state = {
+  students: [],
+  visitors: [],
+  users: [],
+  history: [],
+  uniformStockByProject: {},
+  snackStockByProject: {},
+  classDaysByProject: {},
+  attendanceStaffByProject: {},
+  planningByProject: {},
+  classLocksByProject: {},
+  nucleusLogsByProject: {},
+  mestreDocsByProject: {},
+  settingsByProject: {},
+  supervisaoByProject: {},
+  reportPrefs: { printType: "completo", fields: {} },
+
+  // Aulas
+  lessonsByProject: {},
+  weeksByProject: {},
+  lessonUI: { selectedId: null, search: "", category: "", level: "" },
+
+  sessionUserId: null,
+  currentProjectKey: "light",
+  search: "",
+  attendanceFilter: "todos",
+  uniformFilter: "todos",
+  activeTab: "tab-dashboard",
+};
+
+function el(id) { return document.getElementById(id); }
+
+
+function createEmptyStockByNucleus(projectKey) {
+  return Object.fromEntries(
+    getVisibleNuclei(projectKey).map((n) => [
+      n,
+      Object.fromEntries(STOCK_CATEGORIES.map((i) => [i.key, 0])),
+    ])
+  );
+}
+function createUniformStockByProject() {
+  return Object.fromEntries(PROJECTS.map((p) => [p.key, createEmptyStockByNucleus(p.key)]));
+}
+function createEmptyCalendarByNucleus(projectKey) {
+  return Object.fromEntries(getVisibleNuclei(projectKey).map((n) => [n, { days: [], schedules: [] }]));
+}
+function createProjectCalendars() {
+  return Object.fromEntries(PROJECTS.map((p) => [p.key, createEmptyCalendarByNucleus(p.key)]));
+}
+function createAttendanceStaffByProject() {
+  return Object.fromEntries(
+    PROJECTS.map((p) => [
+      p.key,
+      Object.fromEntries(
+        getVisibleNuclei(p.key).map((n) => [
+          n,
+          { classDate: "", classSchedule: "", professorName: "", monitorName: "" },
+        ])
+      ),
+    ])
+  );
+}
+function createClassLocksByProject() {
+  return Object.fromEntries(
+    PROJECTS.map((p) => [
+      p.key,
+      Object.fromEntries(
+        getVisibleNuclei(p.key).map((n) => [n, { locked: false, lockedAt: "", lockedDate: "" }])
+      ),
+    ])
+  );
+}
+function createMestreDocsByProject() {
+  return Object.fromEntries(
+    PROJECTS.map((p) => [p.key, Object.fromEntries(MESTRE_THEMES.map((t) => [t, null]))])
+  );
+}
+function createSettingsByProject() {
+  return Object.fromEntries(PROJECTS.map((p) => [p.key, { whatsappGroupLink: "" }]));
+}
+function createEmptyDeliveryItems() {
+  return Object.fromEntries(STOCK_CATEGORIES.map((item) => [item.key, false]));
+}
+
+function normalizeStudentData(s) {
+  return {
+    ...s,
+    uniform: { ...(s.uniform || {}), items: { ...createEmptyDeliveryItems(), ...(s.uniform?.items || {}) } },
+    attendanceLog: Array.isArray(s.attendanceLog) ? s.attendanceLog : [],
+    absences: Array.isArray(s.absences) ? s.absences : [],
+    snackLog: Array.isArray(s.snackLog) ? s.snackLog : [],
+    guardian: {
+      name: s.guardian?.name || "",
+      phone: s.guardian?.phone || "",
+      email: s.guardian?.email || "",
+      cpf: s.guardian?.cpf || "",
+    },
+    school: {
+      name: s.school?.name || "",
+      type: s.school?.type || "",
+      year: s.school?.year || "",
+    },
+    address: {
+      street: s.address?.street || "",
+      number: s.address?.number || "",
+      district: s.address?.district || "",
+      zip: s.address?.zip || "",
+      complement: s.address?.complement || "",
+      uf: s.address?.uf || "",
+    },
+    sizes: {
+      shirt: s.sizes?.shirt || "",
+      short: s.sizes?.short || "",
+      kimono: s.sizes?.kimono || "",
+    },
+    extra: {
+      cpf: s.extra?.cpf || "",
+      gender: s.extra?.gender || "",
+      parents: s.extra?.parents || "",
+      enrollDate: s.extra?.enrollDate || s.startDate || "",
+    },
+    pcd: Boolean(s.pcd),
+  };
+}
+
+function createDefaultUsersForProject(projectKey) {
+  const base = [
+    { username: "iin.admin", password: "IIN@Admin2026!", role: "admin", nucleus: null },
+    { username: "iin.gestao", password: "IIN@Gestao2026!", role: "gestao", nucleus: null },
+    { username: "iin.supervisao", password: "IIN@Supervisao2026!", role: "supervisao", nucleus: null },
+
+    { username: "colab.campogrande", password: "IIN@CampoGrande2026!", role: "professor", nucleus: "Campo Grande" },
+    { username: "colab.realengo", password: "IIN@Realengo2026!", role: "professor", nucleus: "Realengo" },
+    { username: "colab.jacarezinho", password: "IIN@Jacarezinho2026!", role: "professor", nucleus: "Jacarezinho" },
+    { username: "colab.penha", password: "IIN@Penha2026!", role: "professor", nucleus: "Penha" },
+    { username: "colab.freguesia", password: "IIN@Freguesia2026!", role: "professor", nucleus: "Freguesia" },
+    { username: "colab.santacruz", password: "IIN@SantaCruz2026!", role: "professor", nucleus: "Santa Cruz" },
+    { username: "colab.macae", password: "IIN@Macae2026!", role: "professor", nucleus: "Macaé" },
+  ];
+
+  return base.map((u) => ({
+    id: crypto.randomUUID(),
+    project: projectKey,
+    ...u,
+  }));
+}
+
+function ensureRequiredUsers() {
+  const allRequired = PROJECTS.flatMap((p) => createDefaultUsersForProject(p.key));
+
+  allRequired.forEach((req) => {
+    const idx = state.users.findIndex(
+      (u) => u.project === req.project && u.username === req.username
+    );
+
+    if (idx === -1) {
+      state.users.push(req);
+    } else {
+      state.users[idx] = {
+        ...state.users[idx],
+        role: req.role,
+        nucleus: req.nucleus,
+        password: req.password,
+      };
+    }
+  });
+}
+
+window.createDefaultUsersForProject = createDefaultUsersForProject;
+window.ensureRequiredUsers = ensureRequiredUsers;
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    state.users = PROJECTS.flatMap((p) => createDefaultUsersForProject(p.key));
+    state.students = [];
+    state.visitors = [];
+    state.history = [];
+    state.uniformStockByProject = createUniformStockByProject();
+    state.classDaysByProject = createProjectCalendars();
+    state.attendanceStaffByProject = createAttendanceStaffByProject();
+    state.planningByProject = {};
+    state.classLocksByProject = createClassLocksByProject();
+    state.nucleusLogsByProject = {};
+    state.mestreDocsByProject = createMestreDocsByProject();
+    state.settingsByProject = createSettingsByProject();
+    state.snackStockByProject = createSnackStockByProject();
+    state.weeksByProject = {};
+    persist();
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    state.lessonsByProject = parsed.lessonsByProject || {};
+    state.weeksByProject = parsed.weeksByProject || {};
+    state.students = Array.isArray(parsed.students) ? parsed.students.map(normalizeStudentData) : [];
+    state.visitors = Array.isArray(parsed.visitors) ? parsed.visitors : [];
+    state.users = Array.isArray(parsed.users) ? parsed.users : PROJECTS.flatMap((p) => createDefaultUsersForProject(p.key));
+    state.history = Array.isArray(parsed.history) ? parsed.history : [];
+    state.uniformStockByProject = parsed.uniformStockByProject || createUniformStockByProject();
+    state.classDaysByProject = parsed.classDaysByProject || createProjectCalendars();
+    state.attendanceStaffByProject = parsed.attendanceStaffByProject || createAttendanceStaffByProject();
+    state.planningByProject = parsed.planningByProject || {};
+    state.classLocksByProject = parsed.classLocksByProject || createClassLocksByProject();
+    state.nucleusLogsByProject = parsed.nucleusLogsByProject || {};
+    state.mestreDocsByProject = parsed.mestreDocsByProject || createMestreDocsByProject();
+    state.settingsByProject = parsed.settingsByProject || createSettingsByProject();
+    state.supervisaoByProject = parsed.supervisaoByProject || {};
+    state.snackStockByProject = parsed.snackStockByProject || createSnackStockByProject();
+  } catch (e) {
+    console.error("Erro ao carregar storage:", e);
+    localStorage.removeItem(STORAGE_KEY);
+    loadData();
+    return;
+  }
+
+  ensureRequiredUsers();
+  ensureNucleusLogs();
+  ensureMestreDocs();
+  ensureProjectSettings();
+  PROJECTS.forEach((project) => normalizeEadData(project.key));
+  persist();
+}
+
+function persist() {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      students: state.students,
+      visitors: state.visitors,
+      users: state.users,
+      history: state.history,
+      uniformStockByProject: state.uniformStockByProject,
+      snackStockByProject: state.snackStockByProject,
+      classDaysByProject: state.classDaysByProject,
+      attendanceStaffByProject: state.attendanceStaffByProject,
+      planningByProject: state.planningByProject,
+      classLocksByProject: state.classLocksByProject,
+      nucleusLogsByProject: state.nucleusLogsByProject,
+      mestreDocsByProject: state.mestreDocsByProject,
+      settingsByProject: state.settingsByProject,
+      supervisaoByProject: state.supervisaoByProject,
+
+      // ✅ NOVO
+      lessonsByProject: state.lessonsByProject,
+      weeksByProject: state.weeksByProject,
+    })
+  );
+}
+
+function loadSession() {
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    state.sessionUserId = parsed?.sessionUserId || null;
+    state.currentProjectKey = parsed?.currentProjectKey || state.currentProjectKey;
+    state.activeTab = parsed?.activeTab || state.activeTab;
+  } catch {
+    state.sessionUserId = null;
+  }
+}
+function persistSession() {
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({
+      sessionUserId: state.sessionUserId,
+      currentProjectKey: state.currentProjectKey,
+      activeTab: state.activeTab,
+    })
+  );
+}
+
+/* ========= REPORT PREFS ========= */
+function loadReportPrefs() {
+  const raw = localStorage.getItem(REPORT_PREFS_KEY);
+  const defaults = Object.fromEntries(CUSTOM_FIELDS.map((f) => [f.key, true]));
+  if (!raw) {
+    state.reportPrefs = { printType: "completo", fields: defaults };
+    return;
+  }
+  try {
+    const p = JSON.parse(raw);
+    state.reportPrefs = {
+      printType: p?.printType || "completo",
+      fields: { ...defaults, ...(p?.fields || {}) },
+    };
+  } catch {
+    state.reportPrefs = { printType: "completo", fields: defaults };
+  }
+}
+function saveReportPrefs() {
+  localStorage.setItem(REPORT_PREFS_KEY, JSON.stringify(state.reportPrefs));
+}
+
+/* ========= PROJECT BAG GETTERS ========= */
+function getProjectStudents(projectKey = state.currentProjectKey) {
+  return state.students.filter((s) => s.project === projectKey);
+}
+function getScopedStudents() {
+  const user = currentUser();
+  const all = getProjectStudents();
+
+  if (user?.role === "professor") {
+    return all.filter((s) => s.nucleus === user.nucleus);
+  }
+  return all;
+}
+function getProjectVisitors(projectKey = state.currentProjectKey) {
+  return state.visitors.filter((v) => v.project === projectKey);
+}
+function getProjectUsers(projectKey = state.currentProjectKey) {
+  return state.users.filter((u) => u.project === projectKey);
+}
+function getProjectStock(projectKey = state.currentProjectKey) {
+  if (!state.uniformStockByProject[projectKey]) state.uniformStockByProject[projectKey] = createEmptyStockByNucleus(projectKey);
+  return state.uniformStockByProject[projectKey];
+}
+function getProjectCalendar(projectKey = state.currentProjectKey) {
+  if (!state.classDaysByProject[projectKey]) state.classDaysByProject[projectKey] = createEmptyCalendarByNucleus(projectKey);
+  return state.classDaysByProject[projectKey];
+}
+function getProjectAttendanceStaff(projectKey = state.currentProjectKey) {
+  if (!state.attendanceStaffByProject[projectKey]) {
+    state.attendanceStaffByProject[projectKey] = createAttendanceStaffByProject()[projectKey];
+  }
+  return state.attendanceStaffByProject[projectKey];
+}
+function getAttendanceStaffByNucleus(nucleus) {
+  const bag = getProjectAttendanceStaff();
+  if (!bag[nucleus]) bag[nucleus] = { classDate: "", classSchedule: "", professorName: "", monitorName: "" };
+  return bag[nucleus];
+}
+function getProjectPlanning(projectKey = state.currentProjectKey) {
+  if (!state.planningByProject[projectKey]) state.planningByProject[projectKey] = [];
+  return state.planningByProject[projectKey];
+}
+function getProjectLocks(projectKey = state.currentProjectKey) {
+  if (!state.classLocksByProject[projectKey]) state.classLocksByProject[projectKey] = createClassLocksByProject()[projectKey];
+  return state.classLocksByProject[projectKey];
+}
+function getLock(nucleus) {
+  const locks = getProjectLocks();
+  if (!locks[nucleus]) locks[nucleus] = { locked: false, lockedAt: "", lockedDate: "" };
+  return locks[nucleus];
+}
+function ensureNucleusLogs(projectKey = state.currentProjectKey) {
+  if (!state.nucleusLogsByProject[projectKey]) {
+    state.nucleusLogsByProject[projectKey] = Object.fromEntries(getVisibleNuclei(projectKey).map((n) => [n, []]));
+  }
+  getVisibleNuclei(projectKey).forEach((n) => {
+    if (!state.nucleusLogsByProject[projectKey][n]) state.nucleusLogsByProject[projectKey][n] = [];
+  });
+  return state.nucleusLogsByProject[projectKey];
+}
+function ensureMestreDocs(projectKey = state.currentProjectKey) {
+  if (!state.mestreDocsByProject[projectKey]) {
+    state.mestreDocsByProject[projectKey] = Object.fromEntries(MESTRE_THEMES.map((t) => [t, null]));
+  }
+  MESTRE_THEMES.forEach((t) => {
+    if (!(t in state.mestreDocsByProject[projectKey])) state.mestreDocsByProject[projectKey][t] = null;
+  });
+  return state.mestreDocsByProject[projectKey];
+}
+function ensureProjectSettings(projectKey = state.currentProjectKey) {
+  if (!state.settingsByProject[projectKey]) state.settingsByProject[projectKey] = { whatsappGroupLink: "" };
+  if (!("whatsappGroupLink" in state.settingsByProject[projectKey])) {
+    state.settingsByProject[projectKey].whatsappGroupLink = "";
+  }
+  return state.settingsByProject[projectKey];
+}
+
+function getSupervisaoBag(projectKey = state.currentProjectKey) {
+  if (!state.supervisaoByProject[projectKey]) {
+    state.supervisaoByProject[projectKey] = [];
+  }
+  return state.supervisaoByProject[projectKey];
+}
+
+/* ========= LOG / HISTORY ========= */
+function pushNucleusLog(nucleus, eventLabel, detail, byUser) {
+  const bag = ensureNucleusLogs();
+  if (!bag[nucleus]) bag[nucleus] = [];
+  bag[nucleus].unshift({
+    id: crypto.randomUUID(),
+    ts: new Date().toISOString(),
+    nucleus,
+    event: eventLabel,
+    by: byUser?.username || "-",
+    detail: detail || "-",
+    project: state.currentProjectKey,
+  });
+  bag[nucleus] = bag[nucleus].slice(0, 500);
+}
+function getNucleusLogs(nucleus) {
+  const bag = ensureNucleusLogs();
+  return (bag[nucleus] || []).slice();
+}
+function pushHistory(student, user, type, detail) {
+  state.history.unshift({
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    nucleus: student.nucleus,
+    studentName: student.name,
+    by: user?.username || "-",
+    type,
+    detail,
+    project: state.currentProjectKey,
+  });
+  state.history = state.history.slice(0, 5000);
+}
+
