@@ -187,11 +187,13 @@ tabPages: [
   adminReportStatus: el("adminReportStatus"),
   noClassDate: el("noClassDate"),
   noClassNucleus: el("noClassNucleus"),
+  noClassYearFilter: el("noClassYearFilter"),
   noClassSchedule: el("noClassSchedule"),
   noClassScheduleHint: el("noClassScheduleHint"),
   noClassReason: el("noClassReason"),
   noClassSaveBtn: el("noClassSaveBtn"),
   noClassStatus: el("noClassStatus"),
+  noClassSummaryBoard: el("noClassSummaryBoard"),
   noClassList: el("noClassList"),
   noClassCountBadge: el("noClassCountBadge"),
   printType: el("printType"),
@@ -237,6 +239,7 @@ tabPages: [
   eadWatchCategory: el("eadWatchCategory"),
   eadWatchNotes: el("eadWatchNotes"),
   eadWatchStatus: el("eadWatchStatus"),
+  eadWatchReportBoard: el("eadWatchReportBoard"),
 
   supervisaoData: el("supervisaoData"),
   supervisaoNucleo: el("supervisaoNucleo"),
@@ -711,25 +714,25 @@ document.addEventListener("click", (e) => {
 });
 
 function bindCollapsiblePanels() {
-  const pairs = [
-    { toggleId: "adminMestreToggle", panelId: "adminMestrePanel" },
-    { toggleId: "usersPanelToggle", panelId: "usersPanel" },
-    { toggleId: "scheduleConfigToggle", panelId: "scheduleConfigPanel" },
-    { toggleId: "supervisaoMensalToggle", panelId: "supervisaoMensalPanel" },
-    { toggleId: "snackHistoryToggle", panelId: "snackHistoryPanel" }
-  ];
+  document.querySelectorAll(".panel-collapse-toggle").forEach((toggle) => {
+    if (toggle.dataset.bound === "1") return;
 
-  pairs.forEach(({ toggleId, panelId }) => {
-    const toggle = document.getElementById(toggleId);
-    const panel = document.getElementById(panelId);
+    const panel = toggle.closest(".collapsible-panel");
+    const contentId = toggle.getAttribute("aria-controls");
+    const content = contentId ? document.getElementById(contentId) : panel?.querySelector(".panel-collapse-content");
+    if (!panel || !content) return;
 
-    if (!toggle || !panel || toggle.dataset.bound === "1") return;
+    const syncState = (isOpen) => {
+      panel.classList.toggle("is-open", isOpen);
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      content.setAttribute("aria-hidden", String(!isOpen));
+    };
 
+    syncState(panel.classList.contains("is-open"));
     toggle.dataset.bound = "1";
 
     toggle.addEventListener("click", () => {
-      const isOpen = panel.classList.toggle("is-open");
-      toggle.setAttribute("aria-expanded", String(isOpen));
+      syncState(!panel.classList.contains("is-open"));
     });
   });
 }

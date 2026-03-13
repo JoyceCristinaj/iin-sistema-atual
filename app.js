@@ -347,6 +347,7 @@ ui.snackTodayBtn?.addEventListener("click", () => {
 
   ui.noClassNucleus?.addEventListener("change", () => hydrateNoClassScheduleOptions());
   ui.noClassDate?.addEventListener("change", () => hydrateNoClassScheduleOptions());
+  ui.noClassYearFilter?.addEventListener("change", () => renderNoClassAdminPanel());
   ui.noClassSaveBtn?.addEventListener("click", saveNoClassRecord);
 
   // Gestão: aluno / calendário

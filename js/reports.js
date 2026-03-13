@@ -1154,7 +1154,16 @@ function fillNamedFilterSelect(node, values = [], allLabel = "Todos") {
 }
 function hydrateAcompanhamentoFilters(entries = buildAcompanhamentoEntries()) {
   const studentNames = Array.from(new Set(entries.map((entry) => entry.studentName).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  const collaboratorNames = Array.from(new Set(entries.map((entry) => entry.collaboratorName).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const collaboratorNames = Array.from(new Set(
+    entries
+      .map((entry) => entry.collaboratorName)
+      .concat(
+        getProjectUsers()
+          .filter((item) => ["professor", "gestao", "admin", "supervisao"].includes(item.role))
+          .map((item) => item.username)
+      )
+      .filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   fillNamedFilterSelect(ui.acompanhamentoStudentFilter, studentNames);
   fillNamedFilterSelect(ui.acompanhamentoCollaboratorFilter, collaboratorNames);
@@ -1362,6 +1371,11 @@ function renderChecklistPrintArea() {
 
   ui.checklistPrintDailyPreview.innerHTML = buildChecklistPrintMarkup("supervisao_diario", dailyRecords);
   ui.checklistPrintMonthlyPreview.innerHTML = buildChecklistPrintMarkup("supervisao_mensal", monthlyRecords);
+  el("checklistPrintDailyPreviewMirror") && (el("checklistPrintDailyPreviewMirror").innerHTML = ui.checklistPrintDailyPreview.innerHTML);
+  el("checklistPrintMonthlyPreviewMirror") && (el("checklistPrintMonthlyPreviewMirror").innerHTML = ui.checklistPrintMonthlyPreview.innerHTML);
+  el("checklistPrintDailyCount") && (el("checklistPrintDailyCount").textContent = `${dailyRecords.length} registro${dailyRecords.length === 1 ? "" : "s"}`);
+  el("checklistPrintMonthlyCount") && (el("checklistPrintMonthlyCount").textContent = `${monthlyRecords.length} registro${monthlyRecords.length === 1 ? "" : "s"}`);
+  el("checklistPrintPreviewCount") && (el("checklistPrintPreviewCount").textContent = `${dailyRecords.length + monthlyRecords.length} registro${dailyRecords.length + monthlyRecords.length === 1 ? "" : "s"} no total`);
 
   if (ui.checklistPrintStatus) {
     ui.checklistPrintStatus.textContent = `Diario: ${dailyRecords.length} registro(s) • Mensal: ${monthlyRecords.length} registro(s)`;
@@ -1424,6 +1438,7 @@ function renderAcompanhamentoTab() {
 
   const allEntries = buildAcompanhamentoEntries();
   hydrateAcompanhamentoFilters(allEntries);
+  renderEadWatchProgressReport?.();
 
   const entries = getFilteredAcompanhamentoEntries();
   ui.acompanhamentoBoard.innerHTML = "";
@@ -1470,6 +1485,226 @@ function renderAcompanhamentoTab() {
     ui.acompanhamentoBoard.appendChild(article);
   });
 }
+
+function extractCompletedLessonsFromRecord(record) {
+  const notes = String(record?.notes || "");
+  const matches = Array.from(notes.matchAll(/aula\s*(\d+)/gi))
+    .map((match) => Number.parseInt(match[1], 10))
+    .filter((value) => Number.isInteger(value));
+
+  const uniqueLessons = Array.from(new Set(matches)).sort((a, b) => a - b);
+  return uniqueLessons.map((lessonNumber) => `Aula ${lessonNumber} concluida`);
+}
+
+function readStoredEadProgress() {
+  try {
+    return JSON.parse(localStorage.getItem("iin-ead-progress-v1") || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+function formatCompletedLessonLabel(lesson) {
+  const title = String(lesson?.title || "").trim();
+  const week = Number.parseInt(lesson?.week, 10);
+  const order = Number.parseInt(lesson?.lessonOrder ?? lesson?.order, 10);
+
+  if (title) return `${title} concluida`;
+  if (Number.isInteger(week) && week > 0 && Number.isInteger(order) && order > 0) {
+    return `Semana ${week} • Aula ${order} concluida`;
+  }
+  if (Number.isInteger(order) && order > 0) return `Aula ${order} concluida`;
+  return "Aula concluida";
+}
+
+function getProjectLessonLookup() {
+  const lessons = Array.isArray(state.lessonsByProject?.[state.currentProjectKey])
+    ? state.lessonsByProject[state.currentProjectKey]
+    : [];
+
+  return new Map(
+    lessons
+      .filter((lesson) => lesson?.id)
+      .map((lesson) => [lesson.id, lesson])
+  );
+}
+
+function buildEadProgressRecords() {
+  const recordsByKey = new Map();
+  const lessonLookup = getProjectLessonLookup();
+  const usersById = new Map(getProjectUsers().map((item) => [item.id, item]));
+  const progressByUser = readStoredEadProgress();
+
+  getProjectEadWatchRecords().forEach((record) => {
+    const category = normalizeEadCategory(record.category) || record.category || "";
+    const stableId = record.collaboratorId || record.collaboratorName || crypto.randomUUID();
+    const key = `${stableId}|${category}`;
+    const noteLessons = extractCompletedLessonsFromRecord(record);
+
+    if (!recordsByKey.has(key)) {
+      recordsByKey.set(key, {
+        collaboratorId: record.collaboratorId || "",
+        collaboratorName: record.collaboratorName || "-",
+        nucleus: record.nucleus || usersById.get(record.collaboratorId || "")?.nucleus || "-",
+        category: category || "-",
+        watchDate: record.watchDate || "",
+        minutes: 0,
+        createdAt: record.createdAt || "",
+        completedLessons: [],
+      });
+    }
+
+    const bucket = recordsByKey.get(key);
+    bucket.minutes += Number(record.minutes || 0);
+    bucket.createdAt = String(bucket.createdAt || "").localeCompare(String(record.createdAt || "")) > 0
+      ? bucket.createdAt
+      : (record.createdAt || bucket.createdAt);
+    bucket.watchDate = String(bucket.watchDate || "").localeCompare(String(record.watchDate || "")) > 0
+      ? bucket.watchDate
+      : (record.watchDate || bucket.watchDate);
+    bucket.completedLessons = bucket.completedLessons.concat(noteLessons);
+  });
+
+  Object.entries(progressByUser || {}).forEach(([userId, progress]) => {
+    const user = usersById.get(userId);
+    const completedIds = Object.entries(progress?.completed || {})
+      .filter(([, done]) => Boolean(done))
+      .map(([lessonId]) => lessonId);
+
+    if (!completedIds.length) return;
+
+    const groupedByCategory = new Map();
+    completedIds.forEach((lessonId) => {
+      const lesson = lessonLookup.get(lessonId);
+      if (!lesson) return;
+
+      const category = normalizeEadCategory(lesson.category) || lesson.category || "-";
+      if (!groupedByCategory.has(category)) groupedByCategory.set(category, []);
+      groupedByCategory.get(category).push(formatCompletedLessonLabel(lesson));
+    });
+
+    groupedByCategory.forEach((lessonLabels, category) => {
+      const key = `${userId}|${category}`;
+      if (!recordsByKey.has(key)) {
+        recordsByKey.set(key, {
+          collaboratorId: userId,
+          collaboratorName: user?.username || "-",
+          nucleus: user?.nucleus || "-",
+          category,
+          watchDate: "",
+          minutes: 0,
+          createdAt: "",
+          completedLessons: [],
+        });
+      }
+
+      const bucket = recordsByKey.get(key);
+      bucket.collaboratorId = bucket.collaboratorId || userId;
+      bucket.collaboratorName = bucket.collaboratorName || user?.username || "-";
+      bucket.nucleus = bucket.nucleus || user?.nucleus || "-";
+      bucket.completedLessons = bucket.completedLessons.concat(lessonLabels);
+    });
+  });
+
+  return Array.from(recordsByKey.values()).map((record) => ({
+    ...record,
+    completedLessons: Array.from(new Set(record.completedLessons.filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR")),
+  }));
+}
+
+function getFilteredEadWatchRecords() {
+  const type = ui.acompanhamentoTypeFilter?.value || "todos";
+  const nucleus = ui.acompanhamentoNucleusFilter?.value || "todos";
+  const collaborator = ui.acompanhamentoCollaboratorFilter?.value || "todos";
+  const dateStart = ui.acompanhamentoDateStart?.value || "";
+  const dateEnd = ui.acompanhamentoDateEnd?.value || "";
+
+  if (type !== "todos" && type !== "ead_tempo") return [];
+
+  return buildEadProgressRecords().filter((record) => {
+    if (nucleus !== "todos" && record.nucleus !== nucleus) return false;
+    if (collaborator !== "todos" && record.collaboratorName !== collaborator) return false;
+    if (dateStart && (!record.watchDate || String(record.watchDate).localeCompare(dateStart) < 0)) return false;
+    if (dateEnd && (!record.watchDate || String(record.watchDate).localeCompare(dateEnd) > 0)) return false;
+    return true;
+  }).sort((a, b) => {
+    const left = String(b.watchDate || b.createdAt || "");
+    const right = String(a.watchDate || a.createdAt || "");
+    return left.localeCompare(right) || String(a.collaboratorName || "").localeCompare(String(b.collaboratorName || ""), "pt-BR");
+  });
+}
+
+function renderEadWatchProgressReport() {
+  if (!ui.eadWatchReportBoard) return;
+
+  const user = currentUser();
+  if (!user || !["admin", "gestao"].includes(user.role)) return;
+
+  const records = getFilteredEadWatchRecords();
+  const totalMinutes = records.reduce((sum, record) => sum + Number(record.minutes || 0), 0);
+  const uniqueCompletedLessons = new Set();
+  records.forEach((record) => {
+    (record.completedLessons || []).forEach((lesson) => {
+      uniqueCompletedLessons.add(`${record.collaboratorId || record.collaboratorName}|${lesson}`);
+    });
+  });
+
+  if (!records.length) {
+    ui.eadWatchReportBoard.innerHTML = `<div class="empty">Nenhum progresso EAD encontrado no momento.</div>`;
+    return;
+  }
+
+  const summary = `
+    <section class="ead-progress-summary">
+      <article class="ead-progress-summary-card">
+        <span>Registros</span>
+        <strong>${records.length}</strong>
+      </article>
+      <article class="ead-progress-summary-card">
+        <span>Tempo assistido</span>
+        <strong>${totalMinutes} min</strong>
+      </article>
+      <article class="ead-progress-summary-card">
+        <span>Aulas concluidas</span>
+        <strong>${uniqueCompletedLessons.size}</strong>
+      </article>
+    </section>
+  `;
+
+  const cards = records.map((record) => {
+    const completedLessons = record.completedLessons || [];
+    const completedCount = completedLessons.length;
+    const lessonChips = completedLessons.length
+      ? completedLessons.map((lesson) => `<span class="ead-progress-chip">${escapeHtml(lesson)}</span>`).join("")
+      : `<span class="ead-progress-chip muted-chip">Aulas nao informadas</span>`;
+
+    return `
+      <article class="ead-progress-card">
+        <div class="ead-progress-card-head">
+          <div>
+            <strong>${escapeHtml(record.collaboratorName || "-")}</strong>
+            <p>${escapeHtml(`Nucleo: ${record.nucleus || "-"} • Modalidade: ${record.category || "-"}`)}</p>
+          </div>
+          <span class="badge">${escapeHtml(record.watchDate ? formatDateLabel(record.watchDate) : "Sem data")}</span>
+        </div>
+        <div class="ead-progress-metrics">
+          <div>
+            <span class="ead-progress-kicker">Tempo assistido</span>
+            <strong>${escapeHtml(String(Number(record.minutes || 0)))} min</strong>
+          </div>
+          <div>
+            <span class="ead-progress-kicker">Aulas concluidas</span>
+            <strong>${escapeHtml(String(completedCount))}</strong>
+          </div>
+        </div>
+        <div class="ead-progress-chip-row">${lessonChips}</div>
+      </article>
+    `;
+  }).join("");
+
+  ui.eadWatchReportBoard.innerHTML = summary + cards;
+}
+
 function syncEadWatchCollaborator() {
   const collaboratorId = ui.eadWatchCollaborator?.value || "";
   const user = getProjectUsers().find((item) => item.id === collaboratorId);

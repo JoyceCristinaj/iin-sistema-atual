@@ -254,24 +254,58 @@ function hydrateNoClassNucleusOptions() {
   ui.noClassNucleus.value = [...ui.noClassNucleus.options].some((option) => option.value === current) ? current : "";
 }
 
+function hydrateNoClassYearOptions() {
+  if (!ui.noClassYearFilter) return;
+  const records = getProjectNoClassRecords();
+  const recordYears = records
+    .map((record) => String(record.date || "").slice(0, 4))
+    .filter((value) => /^\d{4}$/.test(value));
+  const fallbackYear = String(ui.noClassDate?.value || isoToday()).slice(0, 4) || String(new Date().getFullYear());
+  const years = Array.from(new Set([fallbackYear, ...recordYears])).sort((a, b) => Number(b) - Number(a));
+  const current = ui.noClassYearFilter.value || fallbackYear;
+
+  ui.noClassYearFilter.innerHTML = years.map((year) => `<option value="${year}">${year}</option>`).join("");
+  ui.noClassYearFilter.value = years.includes(current) ? current : (years[0] || fallbackYear);
+}
+
 function renderNoClassAdminPanel() {
   if (!ui.noClassList || !ui.noClassCountBadge) return;
+  hydrateNoClassYearOptions();
   const records = getProjectNoClassRecords()
     .slice()
     .sort((a, b) => `${b.date || ""}${b.schedule || ""}`.localeCompare(`${a.date || ""}${a.schedule || ""}`));
+  const selectedYear = ui.noClassYearFilter?.value || String(new Date().getFullYear());
+  const filteredRecords = records.filter((record) => String(record.date || "").startsWith(selectedYear));
 
   ui.noClassCountBadge.textContent = `${records.length} registro${records.length === 1 ? "" : "s"}`;
   ui.noClassList.innerHTML = "";
+  if (ui.noClassSummaryBoard) {
+    const monthNames = [
+      "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    ];
+    const countsByMonth = Array.from({ length: 12 }, () => 0);
+    filteredRecords.forEach((record) => {
+      const monthIndex = Number.parseInt(String(record.date || "").slice(5, 7), 10) - 1;
+      if (monthIndex >= 0 && monthIndex < 12) countsByMonth[monthIndex] += 1;
+    });
+    ui.noClassSummaryBoard.innerHTML = monthNames.map((month, index) => `
+      <article class="month-summary-card">
+        <span class="month-summary-label">${month}</span>
+        <strong class="month-summary-value">${countsByMonth[index]}</strong>
+      </article>
+    `).join("");
+  }
 
-  if (!records.length) {
+  if (!filteredRecords.length) {
     const empty = document.createElement("div");
     empty.className = "panel-lite no-class-empty";
-    empty.textContent = "Nenhum registro de sem aula salvo neste projeto.";
+    empty.textContent = `Nenhum registro de sem aula salvo em ${selectedYear}.`;
     ui.noClassList.appendChild(empty);
     return;
   }
 
-  records.forEach((record) => {
+  filteredRecords.forEach((record) => {
     const item = document.createElement("article");
     item.className = "panel-lite no-class-item";
     item.innerHTML = `
@@ -324,6 +358,7 @@ function saveNoClassRecord() {
 
   pushNucleusLog(nucleus, "Sem aula", `${formatDateLabel(date)} • ${schedule} • ${reason}`, user);
   persist();
+  if (ui.noClassYearFilter) ui.noClassYearFilter.value = String(date).slice(0, 4);
   setNoClassStatus("Registro de sem aula salvo com sucesso.");
   renderNoClassAdminPanel();
 }

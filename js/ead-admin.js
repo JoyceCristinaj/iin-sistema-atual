@@ -190,6 +190,55 @@ function ensureAdminExtraPanels() {
     `;
     adminArea.appendChild(panel3);
   }
+
+  decorateAdminEadPanels();
+}
+
+function createAdminAccordionBlock(id, title, subtitle, isOpen = false) {
+  const section = document.createElement("section");
+  section.className = `panel-lite collapsible-panel${isOpen ? " is-open" : ""}`;
+  section.id = id;
+  section.innerHTML = `
+    <button type="button" class="panel-collapse-toggle" id="${id}Toggle" aria-expanded="${isOpen ? "true" : "false"}" aria-controls="${id}Content">
+      <div class="panel-collapse-head">
+        <h3>${escapeHtml(title)}</h3>
+        <span class="panel-collapse-sub" id="${id}Summary">${escapeHtml(subtitle)}</span>
+      </div>
+      <span class="panel-collapse-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </button>
+    <div id="${id}Content" class="panel-collapse-content"></div>
+  `;
+  return section;
+}
+
+function decorateAdminEadPanels() {
+  const lessonForm = el("adminLessonForm");
+  const lessonPanel = lessonForm?.closest("section.panel");
+  const lessonTable = el("adminLessonsTableBody")?.closest(".table-wrapper");
+  if (lessonPanel && lessonForm && lessonTable && !el("adminLessonFormPanel")) {
+    const formBlock = createAdminAccordionBlock("adminLessonFormPanel", "Cadastro de aula", "Formulario de cadastro e edicao", true);
+    const listBlock = createAdminAccordionBlock("adminLessonListPanel", "Lista de aulas cadastradas", "0 aulas cadastradas", false);
+    formBlock.querySelector(".panel-collapse-content")?.appendChild(lessonForm);
+    listBlock.querySelector(".panel-collapse-content")?.appendChild(lessonTable);
+    lessonPanel.appendChild(formBlock);
+    lessonPanel.appendChild(listBlock);
+  }
+
+  const weekForm = el("adminWeekForm");
+  const weekPanel = weekForm?.closest("section.panel");
+  const weekTable = el("adminWeeksTableBody")?.closest(".table-wrapper");
+  if (weekPanel && weekForm && weekTable && !el("adminWeekFormPanel")) {
+    const formBlock = createAdminAccordionBlock("adminWeekFormPanel", "Cadastro da semana", "Resumo pedagogico e observacoes", true);
+    const listBlock = createAdminAccordionBlock("adminWeekListPanel", "Lista / resumo das semanas cadastradas", "0 semanas cadastradas", false);
+    formBlock.querySelector(".panel-collapse-content")?.appendChild(weekForm);
+    listBlock.querySelector(".panel-collapse-content")?.appendChild(weekTable);
+    weekPanel.appendChild(formBlock);
+    weekPanel.appendChild(listBlock);
+  }
 }
 
 function hydrateLessonAdminCategorySelect() {
@@ -417,6 +466,8 @@ function renderAdminLessonsTable() {
       Number(a.lessonOrder || 0) - Number(b.lessonOrder || 0)
     );
 
+  el("adminLessonListPanelSummary") && (el("adminLessonListPanelSummary").textContent = `${lessons.length} aula${lessons.length === 1 ? "" : "s"} cadastrada${lessons.length === 1 ? "" : "s"}`);
+
   if (!lessons.length) {
     body.innerHTML = `<tr><td colspan="7" class="empty">Sem aulas cadastradas.</td></tr>`;
     return;
@@ -473,6 +524,8 @@ function renderAdminWeeksTable() {
   const weeks = ensureEadWeeksBag()
     .slice()
     .sort((a, b) => a.category.localeCompare(b.category, "pt-BR") || a.week - b.week);
+
+  el("adminWeekListPanelSummary") && (el("adminWeekListPanelSummary").textContent = `${weeks.length} semana${weeks.length === 1 ? "" : "s"} cadastrada${weeks.length === 1 ? "" : "s"}`);
 
   if (!weeks.length) {
     body.innerHTML = `<tr><td colspan="5" class="empty">Sem resumos semanais cadastrados.</td></tr>`;

@@ -1015,8 +1015,14 @@
           </div>
 
           <p id="noClassStatus" class="report-status"></p>
-          <div id="noClassList" class="history-stack"></div>
+          <div class="toolbar">
+            <label>Ano em exibicao
+              <select id="noClassYearFilter"></select>
+            </label>
+          </div>
+          <div id="noClassSummaryBoard" class="month-summary-grid"></div>
         </section>
+          <div id="noClassList" class="history-stack"></div>
 
         <section class="panel">
           <div class="panel-title-row">
@@ -1129,89 +1135,97 @@
             <button id="acompanhamentoClearBtn" type="button" class="ghost">Limpar filtros</button>
           </div>
         </section>
-
-        <section class="panel">
-          <div id="acompanhamentoBoard" class="history-stack"></div>
-        </section>
-
         <section class="panel">
           <div class="panel-title-row">
-            <h2>Central de Impressão da Metodologia</h2>
-            <span class="badge">Diário e mensal</span>
+            <h2>Central de Impressao da Metodologia</h2>
+            <span class="badge">Diario e mensal</span>
           </div>
 
-          <p class="muted">A pré-visualização abaixo respeita os filtros da tela e separa o checklist diário do checklist mensal antes da impressão.</p>
-
-          <div class="toolbar">
-            <button id="checklistPrintDailyBtn" type="button" class="ghost">Imprimir checklist diário</button>
-            <button id="checklistPrintMonthlyBtn" type="button" class="ghost">Imprimir checklist mensal</button>
-          </div>
-
+          <p class="muted">A pre-visualizacao abaixo respeita os filtros da tela e separa o checklist diario do checklist mensal antes da impressao.</p>
           <p id="checklistPrintStatus" class="report-status muted"></p>
 
-          <div class="print-preview-grid">
-            <section class="print-preview-panel">
-              <div class="panel-title-row">
-                <h3>Checklist diário</h3>
-                <span class="badge">Prévia</span>
+          <section class="panel-lite collapsible-panel is-open" id="checklistPrintDailyPanel">
+            <button type="button" class="panel-collapse-toggle" id="checklistPrintDailyToggle" aria-expanded="true" aria-controls="checklistPrintDailyContent">
+              <div class="panel-collapse-head">
+                <h3>Checklist diario</h3>
+                <span class="panel-collapse-sub" id="checklistPrintDailyCount">0 registros</span>
+              </div>
+              <span class="panel-collapse-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+            <div id="checklistPrintDailyContent" class="panel-collapse-content">
+              <div class="toolbar">
+                <button id="checklistPrintDailyBtn" type="button" class="ghost">Imprimir checklist diario</button>
               </div>
               <div id="checklistPrintDailyPreview" class="print-preview-board"></div>
-            </section>
+            </div>
+          </section>
 
-            <section class="print-preview-panel">
-              <div class="panel-title-row">
+          <section class="panel-lite collapsible-panel" id="checklistPrintMonthlyPanel">
+            <button type="button" class="panel-collapse-toggle" id="checklistPrintMonthlyToggle" aria-expanded="false" aria-controls="checklistPrintMonthlyContent">
+              <div class="panel-collapse-head">
                 <h3>Checklist mensal</h3>
-                <span class="badge">Prévia</span>
+                <span class="panel-collapse-sub" id="checklistPrintMonthlyCount">0 registros</span>
+              </div>
+              <span class="panel-collapse-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+            <div id="checklistPrintMonthlyContent" class="panel-collapse-content">
+              <div class="toolbar">
+                <button id="checklistPrintMonthlyBtn" type="button" class="ghost">Imprimir checklist mensal</button>
               </div>
               <div id="checklistPrintMonthlyPreview" class="print-preview-board"></div>
-            </section>
-          </div>
+            </div>
+          </section>
+
+          <section class="panel-lite collapsible-panel" id="checklistPrintPreviewPanel">
+            <button type="button" class="panel-collapse-toggle" id="checklistPrintPreviewToggle" aria-expanded="false" aria-controls="checklistPrintPreviewContent">
+              <div class="panel-collapse-head">
+                <h3>Pre-visualizacao / impressao</h3>
+                <span class="panel-collapse-sub" id="checklistPrintPreviewCount">0 registros no total</span>
+              </div>
+              <span class="panel-collapse-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+            <div id="checklistPrintPreviewContent" class="panel-collapse-content">
+              <div class="print-preview-grid">
+                <section class="print-preview-panel">
+                  <div class="panel-title-row">
+                    <h3>Checklist diario</h3>
+                    <span class="badge">Previa</span>
+                  </div>
+                  <div id="checklistPrintDailyPreviewMirror" class="print-preview-board"></div>
+                </section>
+
+                <section class="print-preview-panel">
+                  <div class="panel-title-row">
+                    <h3>Checklist mensal</h3>
+                    <span class="badge">Previa</span>
+                  </div>
+                  <div id="checklistPrintMonthlyPreviewMirror" class="print-preview-board"></div>
+                </section>
+              </div>
+            </div>
+          </section>
         </section>
 
         <section class="panel">
           <div class="panel-title-row">
-            <h2>Tempo de Aula EAD</h2>
-            <span class="badge">Admin / Gestão</span>
+            <h2>Acompanhamento de Progresso EAD</h2>
+            <span class="badge">Admin / Gestao</span>
           </div>
 
-          <form id="eadWatchForm" class="grid-form three">
-            <label>Colaborador
-              <select id="eadWatchCollaborator">
-                <option value="">Selecione</option>
-              </select>
-            </label>
-
-            <label>Núcleo
-              <select id="eadWatchNucleus"></select>
-            </label>
-
-            <label>Data
-              <input id="eadWatchDate" type="date" />
-            </label>
-
-            <label>Minutos assistidos
-              <input id="eadWatchMinutes" type="number" min="1" step="1" placeholder="Ex: 45" />
-            </label>
-
-            <label>Modalidade
-              <select id="eadWatchCategory">
-                <option value="">Selecione</option>
-                <option value="Boxe">Boxe</option>
-                <option value="Muay Thai">Muay Thai</option>
-                <option value="Jiu Jitso">Jiu Jitso</option>
-              </select>
-            </label>
-
-            <label>Observação
-              <input id="eadWatchNotes" type="text" placeholder="Observação opcional" />
-            </label>
-
-            <div class="toolbar" style="grid-column:1/-1;">
-              <button type="submit" class="primary">Salvar tempo EAD</button>
-            </div>
-          </form>
-
-          <p id="eadWatchStatus" class="report-status"></p>
+          <p class="muted">Relatorio operacional com tempo assistido, quantidade de aulas concluidas e quais aulas foram concluidas por colaborador.</p>
+          <div id="eadWatchReportBoard" class="history-stack"></div>
         </section>
       </section>
 
