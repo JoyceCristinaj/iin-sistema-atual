@@ -1194,6 +1194,222 @@ function getFilteredAcompanhamentoEntries() {
     return true;
   });
 }
+
+function formatSupervisaoAnswerValue(value) {
+  if (value === "sim") return "Sim";
+  if (value === "parcial") return "Parcial";
+  if (value === "nao") return "Nao";
+  return value || "-";
+}
+
+function formatSupervisaoDailyResponses(record) {
+  return Object.entries(record.checklistDiario || {})
+    .filter(([, value]) => value)
+    .map(([key, value]) => {
+      const match = key.match(/^diario_(\d+)_t(\d+)$/);
+      if (!match) return null;
+      const itemLabel = SUPERVISAO_CHECKLIST_DIARIO[Number(match[1])] || key;
+      return {
+        group: `T${match[2]}`,
+        item: itemLabel,
+        value: formatSupervisaoAnswerValue(value),
+      };
+    })
+    .filter(Boolean);
+}
+
+function formatSupervisaoMonthlyResponses(record, prefix, labels) {
+  return Object.entries(prefix === "instrutor" ? (record.metodologiaInstrutores || {}) : (record.metodologiaTurmas || {}))
+    .filter(([, value]) => value)
+    .map(([key, value]) => {
+      const match = key.match(new RegExp(`^${prefix}_(\\d+)_s(\\d+)$`));
+      if (!match) return null;
+      const itemLabel = labels[Number(match[1])] || key;
+      return {
+        group: `${match[2]}a semana`,
+        item: itemLabel,
+        value: formatSupervisaoAnswerValue(value),
+      };
+    })
+    .filter(Boolean);
+}
+
+function getFilteredSupervisaoRecordsByType(type) {
+  const activeType = ui.acompanhamentoTypeFilter?.value || "todos";
+  const nucleus = ui.acompanhamentoNucleusFilter?.value || "todos";
+  const student = ui.acompanhamentoStudentFilter?.value || "todos";
+  const collaborator = ui.acompanhamentoCollaboratorFilter?.value || "todos";
+  const dateStart = ui.acompanhamentoDateStart?.value || "";
+  const dateEnd = ui.acompanhamentoDateEnd?.value || "";
+
+  if (student !== "todos") return [];
+  if (activeType !== "todos" && activeType !== type) return [];
+
+  return getSupervisaoBag().filter((record) => {
+    if (record.type !== type) return false;
+    if (nucleus !== "todos" && record.nucleo !== nucleus) return false;
+
+    const names = [
+      record.instrutor || "",
+      record.supervisor || "",
+      record.supervisorMensal || "",
+      record.gerenteGeral || "",
+    ].filter(Boolean);
+
+    if (collaborator !== "todos" && !names.includes(collaborator)) return false;
+
+    const referenceDate = type === "supervisao_mensal"
+      ? (record.dia || (record.mes ? `${record.mes}-01` : ""))
+      : (record.data || "");
+
+    if (dateStart && String(referenceDate || "").localeCompare(dateStart) < 0) return false;
+    if (dateEnd && String(referenceDate || "").localeCompare(dateEnd) > 0) return false;
+    return true;
+  });
+}
+
+function buildChecklistPrintMarkup(type, records, generatedAtLabel = new Date().toLocaleString("pt-BR")) {
+  const label = type === "supervisao_mensal" ? "Checklist mensal" : "Checklist diario";
+  if (!records.length) {
+    return `<div class="empty">Nenhum ${label.toLowerCase()} encontrado com os filtros atuais.</div>`;
+  }
+
+  const articles = records.map((record) => {
+    const responseRows = type === "supervisao_mensal"
+      ? [
+          ...formatSupervisaoMonthlyResponses(record, "instrutor", SUPERVISAO_METODOLOGIA_INSTRUTORES).map((item) => ({ ...item, block: "Instrutores" })),
+          ...formatSupervisaoMonthlyResponses(record, "turma", SUPERVISAO_METODOLOGIA_TURMAS).map((item) => ({ ...item, block: "Turmas" })),
+        ]
+      : formatSupervisaoDailyResponses(record).map((item) => ({ ...item, block: "Turmas" }));
+
+    return `
+      <article class="print-record-sheet">
+        <div class="print-record-head">
+          <div>
+            <strong>${escapeHtml(label)}</strong>
+            <span class="badge">${escapeHtml(record.nucleo || "-")}</span>
+          </div>
+          <div class="muted">${escapeHtml(formatTimestampLabel(record.updatedAt || record.createdAt))}</div>
+        </div>
+        <div class="print-record-meta">
+          <span>Nucleo: ${escapeHtml(record.nucleo || "-")}</span>
+          <span>${type === "supervisao_mensal" ? `Periodo: ${escapeHtml(record.mes || "-")}` : `Data: ${escapeHtml(record.data ? formatDateLabel(record.data) : "-")}`}</span>
+          <span>Responsavel: ${escapeHtml(type === "supervisao_mensal" ? (record.supervisorMensal || "-") : (record.supervisor || "-"))}</span>
+          ${type === "supervisao_mensal" ? `<span>Status: ${escapeHtml(acompanhamentoStatusLabel(record.status))}</span>` : ""}
+        </div>
+        ${record.observacoesGerais ? `<p class="print-record-note"><strong>Observacoes:</strong> ${escapeHtml(record.observacoesGerais)}</p>` : ""}
+        ${record.avaliacaoGeral ? `<p class="print-record-note"><strong>Avaliacao:</strong> ${escapeHtml(record.avaliacaoGeral)}</p>` : ""}
+        <div class="table-wrapper">
+          <table class="annual-snack-table">
+            <thead>
+              <tr>
+                <th>Bloco</th>
+                <th>Referencia</th>
+                <th>Item</th>
+                <th>Resposta</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${responseRows.length ? responseRows.map((row) => `
+                <tr>
+                  <td>${escapeHtml(row.block || "-")}</td>
+                  <td>${escapeHtml(row.group || "-")}</td>
+                  <td>${escapeHtml(row.item || "-")}</td>
+                  <td>${escapeHtml(row.value || "-")}</td>
+                </tr>
+              `).join("") : `
+                <tr>
+                  <td colspan="4">Sem respostas preenchidas.</td>
+                </tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  return `
+    <section class="print-preview-sheet">
+      <div class="print-preview-sheet-head">
+        <div>
+          <h3>${escapeHtml(label)}</h3>
+          <p>Registros selecionados: ${escapeHtml(String(records.length))}</p>
+        </div>
+        <div class="print-preview-meta">
+          <span>Gerado em ${escapeHtml(generatedAtLabel)}</span>
+        </div>
+      </div>
+      ${articles}
+    </section>
+  `;
+}
+
+function renderChecklistPrintArea() {
+  if (!ui.checklistPrintDailyPreview || !ui.checklistPrintMonthlyPreview) return;
+
+  const user = currentUser();
+  if (!user || !["admin", "gestao"].includes(user.role)) return;
+
+  const dailyRecords = getFilteredSupervisaoRecordsByType("supervisao_diario");
+  const monthlyRecords = getFilteredSupervisaoRecordsByType("supervisao_mensal");
+
+  ui.checklistPrintDailyPreview.innerHTML = buildChecklistPrintMarkup("supervisao_diario", dailyRecords);
+  ui.checklistPrintMonthlyPreview.innerHTML = buildChecklistPrintMarkup("supervisao_mensal", monthlyRecords);
+
+  if (ui.checklistPrintStatus) {
+    ui.checklistPrintStatus.textContent = `Diario: ${dailyRecords.length} registro(s) • Mensal: ${monthlyRecords.length} registro(s)`;
+  }
+}
+
+function printChecklistEntriesByType(type) {
+  const records = getFilteredSupervisaoRecordsByType(type);
+  const label = type === "supervisao_mensal" ? "Checklist mensal" : "Checklist diario";
+  if (!records.length) {
+    if (ui.checklistPrintStatus) {
+      ui.checklistPrintStatus.textContent = `Nao ha dados para imprimir em ${label.toLowerCase()} com os filtros atuais.`;
+    }
+    return;
+  }
+
+  const generatedAtLabel = new Date().toLocaleString("pt-BR");
+  const printMarkup = buildChecklistPrintMarkup(type, records, generatedAtLabel);
+  const popup = window.open("", "_blank", "width=1200,height=760");
+  if (!popup) return;
+
+  popup.document.write(`
+    <html lang="pt-BR">
+      <head>
+        <title>${escapeHtml(label)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+          h1 { margin: 0 0 10px; }
+          p { color: #475467; }
+          .toolbar { margin-bottom: 16px; }
+          .print-preview-sheet { display: grid; gap: 18px; }
+          .print-preview-sheet-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+          .print-preview-sheet-head h3 { margin: 0 0 4px; }
+          .print-preview-meta { color: #475467; font-size: 12px; }
+          .print-record-sheet { border: 1px solid #d0d5dd; border-radius: 14px; padding: 16px; display: grid; gap: 12px; }
+          .print-record-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+          .print-record-meta { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 12px; color: #344054; }
+          .print-record-note { margin: 0; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { border: 1px solid #cfcfcf; padding: 8px; text-align: left; vertical-align: top; }
+          th { background: #f3f4f6; }
+          @media print { .toolbar { display: none; } body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="toolbar"><button onclick="window.print()">Imprimir</button></div>
+        <h1>${escapeHtml(label)}</h1>
+        ${printMarkup}
+      </body>
+    </html>
+  `);
+  popup.document.close();
+}
+
 function renderAcompanhamentoTab() {
   if (!ui.acompanhamentoBoard) return;
 
@@ -1208,6 +1424,7 @@ function renderAcompanhamentoTab() {
   if (ui.acompanhamentoCountBadge) {
     ui.acompanhamentoCountBadge.textContent = `${entries.length} registros`;
   }
+  renderChecklistPrintArea?.();
 
   if (!entries.length) {
     ui.acompanhamentoBoard.innerHTML = `<div class="empty">Nenhum registro encontrado com os filtros atuais.</div>`;

@@ -1006,6 +1006,14 @@
 
           <p id="annualSnackStatus" class="report-status muted"></p>
           <div id="annualSnackBoard" class="history-stack"></div>
+
+          <section class="print-preview-panel">
+            <div class="panel-title-row">
+              <h3>Pré-visualização de impressão</h3>
+              <span class="badge">Mesmos dados da tela</span>
+            </div>
+            <div id="annualSnackPrintPreview" class="print-preview-board"></div>
+          </section>
         </section>
       </section>
 
@@ -1067,6 +1075,40 @@
 
         <section class="panel">
           <div id="acompanhamentoBoard" class="history-stack"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Central de Impressão da Metodologia</h2>
+            <span class="badge">Diário e mensal</span>
+          </div>
+
+          <p class="muted">A pré-visualização abaixo respeita os filtros da tela e separa o checklist diário do checklist mensal antes da impressão.</p>
+
+          <div class="toolbar">
+            <button id="checklistPrintDailyBtn" type="button" class="ghost">Imprimir checklist diário</button>
+            <button id="checklistPrintMonthlyBtn" type="button" class="ghost">Imprimir checklist mensal</button>
+          </div>
+
+          <p id="checklistPrintStatus" class="report-status muted"></p>
+
+          <div class="print-preview-grid">
+            <section class="print-preview-panel">
+              <div class="panel-title-row">
+                <h3>Checklist diário</h3>
+                <span class="badge">Prévia</span>
+              </div>
+              <div id="checklistPrintDailyPreview" class="print-preview-board"></div>
+            </section>
+
+            <section class="print-preview-panel">
+              <div class="panel-title-row">
+                <h3>Checklist mensal</h3>
+                <span class="badge">Prévia</span>
+              </div>
+              <div id="checklistPrintMonthlyPreview" class="print-preview-board"></div>
+            </section>
+          </div>
         </section>
 
         <section class="panel">

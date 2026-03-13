@@ -426,6 +426,61 @@ function buildAnnualSnackTable(title, rows = [], labelKey = "label") {
   `;
 }
 
+function buildAnnualSnackPrintMarkup(year, rows, generatedAtLabel = new Date().toLocaleString("pt-BR")) {
+  const summary = summarizeAnnualSnackRows(rows);
+  const buildRows = (items, key = "label") => items.map((item) => `
+    <tr>
+      <td>${escapeHtml(item[key] || "-")}</td>
+      <td>${escapeHtml(String(item.total || 0))}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <section class="print-preview-sheet">
+      <div class="print-preview-sheet-head">
+        <div>
+          <h3>Relatorio anual de lanches</h3>
+          <p>Ano selecionado: ${escapeHtml(String(year))}</p>
+        </div>
+        <div class="print-preview-meta">
+          <span>Gerado em ${escapeHtml(generatedAtLabel)}</span>
+        </div>
+      </div>
+
+      <div class="print-preview-kpis">
+        <article><strong>Total anual</strong><b>${escapeHtml(String(summary.total))}</b></article>
+        <article><strong>Meses com registro</strong><b>${escapeHtml(String(summary.monthsWithRecords))}</b></article>
+        <article><strong>Nucleos</strong><b>${escapeHtml(String(summary.nucleiCount))}</b></article>
+        <article><strong>Projetos</strong><b>${escapeHtml(String(summary.projectCount))}</b></article>
+      </div>
+
+      <div class="print-preview-block">
+        <h4>Total por mes</h4>
+        <table class="annual-snack-table">
+          <thead><tr><th>Mes</th><th>Total</th></tr></thead>
+          <tbody>${buildRows(summary.byMonth)}</tbody>
+        </table>
+      </div>
+
+      <div class="print-preview-block">
+        <h4>Total por nucleo</h4>
+        <table class="annual-snack-table">
+          <thead><tr><th>Nucleo</th><th>Total</th></tr></thead>
+          <tbody>${buildRows(summary.byNucleus)}</tbody>
+        </table>
+      </div>
+
+      <div class="print-preview-block">
+        <h4>Total por projeto</h4>
+        <table class="annual-snack-table">
+          <thead><tr><th>Projeto</th><th>Total</th></tr></thead>
+          <tbody>${buildRows(summary.byProject)}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
 function renderAnnualSnackReport() {
   if (!ui.annualSnackBoard) return;
 
@@ -446,6 +501,9 @@ function renderAnnualSnackReport() {
 
   if (!rows.length) {
     ui.annualSnackBoard.innerHTML = `<div class="empty">Sem entregas de lanches registradas em ${year}.</div>`;
+    if (ui.annualSnackPrintPreview) {
+      ui.annualSnackPrintPreview.innerHTML = `<div class="empty">Nao ha dados para gerar a impressao do relatorio anual de lanches.</div>`;
+    }
     return;
   }
 
@@ -476,6 +534,10 @@ function renderAnnualSnackReport() {
     ${buildAnnualSnackTable("Total por nucleo", summary.byNucleus)}
     ${buildAnnualSnackTable("Total por projeto", summary.byProject)}
   `;
+
+  if (ui.annualSnackPrintPreview) {
+    ui.annualSnackPrintPreview.innerHTML = buildAnnualSnackPrintMarkup(year, rows);
+  }
 }
 
 function printAnnualSnackReport() {
@@ -483,16 +545,10 @@ function printAnnualSnackReport() {
   const rows = getAnnualSnackRows(year);
   if (!rows.length) return;
 
-  const summary = summarizeAnnualSnackRows(rows);
   const popup = window.open("", "_blank", "width=1100,height=760");
   if (!popup) return;
-
-  const buildRows = (items, key = "label") => items.map((item) => `
-    <tr>
-      <td>${escapeHtml(item[key] || "-")}</td>
-      <td>${escapeHtml(String(item.total || 0))}</td>
-    </tr>
-  `).join("");
+  const generatedAtLabel = new Date().toLocaleString("pt-BR");
+  const printMarkup = buildAnnualSnackPrintMarkup(year, rows, generatedAtLabel);
 
   popup.document.write(`
     <html lang="pt-BR">
@@ -507,6 +563,16 @@ function printAnnualSnackReport() {
           .summary article { border: 1px solid #d0d5dd; border-radius: 12px; padding: 14px; }
           .summary strong { display: block; margin-bottom: 8px; }
           .summary b { font-size: 24px; }
+          .print-preview-sheet { display: grid; gap: 18px; }
+          .print-preview-sheet-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+          .print-preview-sheet-head h3 { margin: 0 0 6px; }
+          .print-preview-meta { color: #475467; font-size: 12px; }
+          .print-preview-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+          .print-preview-kpis article { border: 1px solid #d0d5dd; border-radius: 12px; padding: 14px; }
+          .print-preview-kpis strong { display: block; margin-bottom: 8px; }
+          .print-preview-kpis b { font-size: 24px; }
+          .print-preview-block { display: grid; gap: 10px; }
+          .print-preview-block h4 { margin: 0; }
           table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 18px; }
           th, td { border: 1px solid #cfcfcf; padding: 8px; text-align: left; }
           th { background: #f3f4f6; }
@@ -516,28 +582,8 @@ function printAnnualSnackReport() {
       <body>
         <div class="toolbar"><button onclick="window.print()">Imprimir</button></div>
         <h1>Relatorio anual de lanches</h1>
-        <p>Ano: ${escapeHtml(String(year))} • Base: entregas reais registradas em alunos/snackLog • Gerado em ${escapeHtml(new Date().toLocaleString("pt-BR"))}</p>
-        <section class="summary">
-          <article><strong>Total anual</strong><b>${escapeHtml(String(summary.total))}</b></article>
-          <article><strong>Meses com registro</strong><b>${escapeHtml(String(summary.monthsWithRecords))}</b></article>
-          <article><strong>Nucleos</strong><b>${escapeHtml(String(summary.nucleiCount))}</b></article>
-          <article><strong>Projetos</strong><b>${escapeHtml(String(summary.projectCount))}</b></article>
-        </section>
-        <h2>Total por mes</h2>
-        <table>
-          <thead><tr><th>Mes</th><th>Total</th></tr></thead>
-          <tbody>${buildRows(summary.byMonth)}</tbody>
-        </table>
-        <h2>Total por nucleo</h2>
-        <table>
-          <thead><tr><th>Nucleo</th><th>Total</th></tr></thead>
-          <tbody>${buildRows(summary.byNucleus)}</tbody>
-        </table>
-        <h2>Total por projeto</h2>
-        <table>
-          <thead><tr><th>Projeto</th><th>Total</th></tr></thead>
-          <tbody>${buildRows(summary.byProject)}</tbody>
-        </table>
+        <p>Base: entregas reais registradas em alunos/snackLog.</p>
+        ${printMarkup}
       </body>
     </html>
   `);

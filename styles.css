@@ -2361,6 +2361,106 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
   text-align: left;
 }
 
+.print-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.print-preview-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed #c9d5e6;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fcfdff 0%, #f7faff 100%);
+}
+
+.print-preview-board {
+  display: grid;
+  gap: 14px;
+  max-height: 680px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.print-preview-sheet {
+  display: grid;
+  gap: 14px;
+}
+
+.print-preview-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.print-preview-sheet-head h3,
+.print-preview-block h4 {
+  margin: 0;
+}
+
+.print-preview-sheet-head p,
+.print-record-note {
+  margin: 0;
+}
+
+.print-preview-meta {
+  color: #475467;
+  font-size: 0.88rem;
+}
+
+.print-preview-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.print-preview-kpis article,
+.print-record-sheet {
+  border: 1px solid #d7dde7;
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.print-preview-kpis strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.print-preview-kpis b {
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.print-preview-block {
+  display: grid;
+  gap: 10px;
+}
+
+.print-record-sheet {
+  display: grid;
+  gap: 12px;
+}
+
+.print-record-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.print-record-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: #475467;
+  font-size: 0.92rem;
+}
+
 .supervisao-topo {
   gap: 16px;
 }
@@ -2489,6 +2589,15 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
 
   .annual-snack-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .print-preview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .print-preview-sheet-head,
+  .print-record-head {
+    flex-direction: column;
   }
 }
 

@@ -404,6 +404,8 @@ ui.snackTodayBtn?.addEventListener("click", () => {
   ].forEach((node) => node?.addEventListener("change", () => renderAcompanhamentoTab?.()));
   ui.acompanhamentoClearBtn?.addEventListener("click", clearAcompanhamentoFilters);
   ui.acompanhamentoPrintBtn?.addEventListener("click", printAcompanhamentoReport);
+  ui.checklistPrintDailyBtn?.addEventListener("click", () => printChecklistEntriesByType?.("supervisao_diario"));
+  ui.checklistPrintMonthlyBtn?.addEventListener("click", () => printChecklistEntriesByType?.("supervisao_mensal"));
   ui.eadWatchForm?.addEventListener("submit", onSaveEadWatchRecord);
   ui.eadWatchCollaborator?.addEventListener("change", syncEadWatchCollaborator);
   ui.annualSnackYear?.addEventListener("change", () => renderAnnualSnackReport?.());
@@ -676,6 +678,7 @@ hydrateWhatsStudents();
 renderDashboardChart();
 renderDashboardMiniChart();
 renderAcompanhamentoTab?.();
+renderChecklistPrintArea?.();
 renderAnnualSnackReport?.();
 renderSupervisaoTab?.();
 
