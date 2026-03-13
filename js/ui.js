@@ -651,7 +651,8 @@ function bindCollapsiblePanels() {
     { toggleId: "adminMestreToggle", panelId: "adminMestrePanel" },
     { toggleId: "usersPanelToggle", panelId: "usersPanel" },
     { toggleId: "scheduleConfigToggle", panelId: "scheduleConfigPanel" },
-    { toggleId: "supervisaoMensalToggle", panelId: "supervisaoMensalPanel" }
+    { toggleId: "supervisaoMensalToggle", panelId: "supervisaoMensalPanel" },
+    { toggleId: "snackHistoryToggle", panelId: "snackHistoryPanel" }
   ];
 
   pairs.forEach(({ toggleId, panelId }) => {

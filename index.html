@@ -901,12 +901,23 @@
           <div class="snack-grid">
             <div id="snackCards" class="snack-cards"></div>
 
-            <div class="snack-history panel-lite">
-              <div class="snack-history-head">
+            <div class="snack-history panel-lite collapsible-panel" id="snackHistoryPanel">
+              <button type="button" class="panel-collapse-toggle" id="snackHistoryToggle" aria-expanded="false" aria-controls="snackHistoryContent">
                 <strong>Últimos movimentos</strong>
-                <span id="snackHistoryBadge" class="badge">0</span>
+                <span class="snack-history-toggle-side">
+                  <span id="snackHistoryBadge" class="badge">0</span>
+                  <span class="panel-collapse-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </span>
+              </button>
+              <div id="snackHistoryContent" class="panel-collapse-content">
+                <div class="snack-history-scroll">
+                  <ul id="snackHistoryList" class="history-list"></ul>
+                </div>
               </div>
-              <ul id="snackHistoryList" class="history-list"></ul>
             </div>
           </div>
         </section>
@@ -1606,7 +1617,7 @@
           </div>
 
           <div class="toolbar" style="margin-top:16px;">
-            <button type="button" class="ghost" id="salvarSupervisaoMensalRascunhoBtn">Salvar rascunho mensal</button>
+            <button type="button" class="ghost" id="salvarSupervisaoMensalRascunhoBtn">Salvar checklist mensal</button>
             <button type="button" class="primary" id="concluirSupervisaoMensalBtn">Concluir checklist mensal</button>
           </div>
           </div>
@@ -1619,13 +1630,13 @@
   <!-- TEMPLATE CARD CHAMADA -->
   <template id="attendanceCardTemplate">
     <article class="student-card">
-      <div class="student-card-head">
+      <div class="student-card-body">
         <strong class="student-name">Aluno</strong>
-        <span class="freq-pill">0%</span>
+        <p class="student-class-info muted">Turma</p>
+        <span class="freq-pill hidden" aria-hidden="true"></span>
+        <p class="student-contact hidden" aria-hidden="true"></p>
+        <p class="student-status hidden" aria-hidden="true"></p>
       </div>
-      <p class="student-contact muted">Contato</p>
-      <p class="student-class-info muted">Turma</p>
-      <p class="student-status muted">Status</p>
       <div class="student-actions">
         <button type="button" class="btn-present">P</button>
         <button type="button" class="btn-absent">F</button>

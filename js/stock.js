@@ -4,6 +4,39 @@
 function labelStockCategory(categoryKey) {
   return STOCK_CATEGORIES.find((i) => i.key === categoryKey)?.label || categoryKey;
 }
+function stockCategoryIconMarkup(categoryKey) {
+  const icons = {
+    camiseta: `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M8 5.5L10.5 4H13.5L16 5.5L19 7L17.2 10L15 8.8V20H9V8.8L6.8 10L5 7L8 5.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    `,
+    shorts: `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M6 4H18L17 20H13L12 13L11 20H7L6 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    `,
+    kimono: `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M8 4H16L19 9L15 12V20H9V12L5 9L8 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M10.5 4L12 9L13.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    `,
+    bandagem: `
+      <svg viewBox="0 0 24 24" fill="none">
+        <rect x="4" y="8" width="16" height="8" rx="4" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M9 10.5H9.01M12 10.5H12.01M15 10.5H15.01M9 13.5H9.01M12 13.5H12.01M15 13.5H15.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    `,
+    protetor_bucal: `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M6 8.5C6 6.6 7.6 5 9.5 5H14.5C16.4 5 18 6.6 18 8.5V11C18 15.2 15.2 18.8 12 20C8.8 18.8 6 15.2 6 11V8.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M9 10.5V12.5M15 10.5V12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    `,
+  };
+  return icons[categoryKey] || icons.camiseta;
+}
 function getAllowedItemsByModality(modality) {
   return MODALITY_ITEMS[modality] || [];
 }
@@ -42,6 +75,12 @@ function renderItemDeliveryControls(container, student) {
   const select = document.createElement("select");
   select.className = "item-delivery-select";
   select.innerHTML = `<option value="">Selecionar item entregue</option>`;
+  if (allowed.length > 1) {
+    const optAll = document.createElement("option");
+    optAll.value = "__kit_completo__";
+    optAll.textContent = "Entregar kit completo";
+    select.appendChild(optAll);
+  }
   allowed.forEach((k) => {
     const opt = document.createElement("option");
     opt.value = k;
@@ -49,8 +88,11 @@ function renderItemDeliveryControls(container, student) {
     select.appendChild(opt);
   });
 
-  container.appendChild(p);
-  container.appendChild(select);
+  const stack = document.createElement("div");
+  stack.className = "item-delivery-stack";
+  stack.appendChild(p);
+  stack.appendChild(select);
+  container.appendChild(stack);
   return { select };
 }
 
@@ -117,13 +159,31 @@ function renderUniformTable() {
     const controls = renderItemDeliveryControls(itemsCell, student);
 
     tr.querySelector(`[data-save="${student.id}"]`)?.addEventListener("click", () => {
-      const next = { ...(student.uniform.items || createEmptyDeliveryItems()) };
-      if (controls?.select?.value) next[controls.select.value] = true;
+      const selectedItem = controls?.select?.value || "";
+      if (!selectedItem) return;
+
+      const previousItems = { ...(student.uniform.items || createEmptyDeliveryItems()) };
+      const next = { ...previousItems };
+
+      if (selectedItem === "__kit_completo__") {
+        getAllowedItemsByModality(student.modality).forEach((key) => {
+          next[key] = true;
+        });
+      } else {
+        next[selectedItem] = true;
+      }
+
       applyUniformUpdate(student, next);
 
       const user = currentUser();
-      if (controls?.select?.value) {
-        pushNucleusLog(student.nucleus, "Kit", `Entregue ${labelStockCategory(controls.select.value)} para ${student.name}`, user);
+      const deliveredNow = getAllowedItemsByModality(student.modality)
+        .filter((key) => !previousItems[key] && student.uniform.items?.[key]);
+
+      if (deliveredNow.length) {
+        const deliveredLabel = selectedItem === "__kit_completo__"
+          ? `Kit completo (${deliveredNow.map(labelStockCategory).join(", ")})`
+          : labelStockCategory(selectedItem);
+        pushNucleusLog(student.nucleus, "Kit", `Entregue ${deliveredLabel} para ${student.name}`, user);
         persist();
       }
     });
@@ -155,7 +215,15 @@ function renderStock() {
   STOCK_CATEGORIES.forEach((item) => {
     const card = document.createElement("article");
     card.className = "stock-card";
-    card.innerHTML = `<h4>${escapeHtml(item.label)}</h4><p>${totals[item.key] || 0} unidades</p>`;
+    card.innerHTML = `
+      <div class="stock-card-head">
+        <span class="stock-card-icon" aria-hidden="true">${stockCategoryIconMarkup(item.key)}</span>
+        <div class="stock-card-copy">
+          <h4>${escapeHtml(item.label)}</h4>
+          <p>${totals[item.key] || 0} unidades</p>
+        </div>
+      </div>
+    `;
     ui.stockView.appendChild(card);
   });
 }

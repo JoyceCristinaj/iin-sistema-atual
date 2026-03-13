@@ -487,13 +487,14 @@ ui.snackTodayBtn?.addEventListener("click", () => {
         if (applySnack) {
           e.preventDefault();
           const nucleus = applySnack.getAttribute("data-snack-apply");
+          const mode = applySnack.getAttribute("data-snack-mode") || "entry";
           const qty = Number(
-            document.querySelector(`[data-snack-custom="${cssEscape(nucleus)}"]`)?.value || 0
+            document.querySelector(`[data-snack-custom="${cssEscape(nucleus)}"][data-snack-mode="${cssEscape(mode)}"]`)?.value || 0
           );
           const note =
             document.querySelector(`[data-snack-note="${cssEscape(nucleus)}"]`)?.value || "";
           if (!Number.isFinite(qty) || qty <= 0) return;
-          applySnackDelta(nucleus, qty, note.trim());
+          applySnackDelta(nucleus, mode === "exit" ? -qty : qty, note.trim());
           return;
         }
       },

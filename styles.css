@@ -2818,3 +2818,358 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
     min-width: 680px;
   }
 }
+
+/* =========================
+   REFINOS OPERACIONAIS
+========================= */
+.login-card .login-brand h1 {
+  color: #101828 !important;
+}
+
+.login-card .login-brand .sub {
+  color: #4b5568 !important;
+}
+
+.login-card .login-project-badge {
+  border-color: rgba(194, 204, 218, 0.72);
+  background: linear-gradient(180deg, rgba(250, 251, 253, 0.96) 0%, rgba(243, 246, 250, 0.94) 100%);
+}
+
+.table-wrapper td {
+  color: #24364a;
+  font-weight: 500;
+}
+
+.table-wrapper tbody tr:hover td {
+  background: #f9fbfd;
+}
+
+.table-wrapper td .muted {
+  color: #607089;
+}
+
+.nucleus-column {
+  padding: 16px 18px;
+}
+
+.student-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+}
+
+.student-card-body {
+  display: grid;
+  gap: 4px;
+}
+
+.student-name {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #16253a;
+}
+
+.student-class-info {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: #52627b;
+}
+
+.student-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 0;
+}
+
+.student-actions button {
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+#tab-fila .fila-metric-card {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+#tab-fila .fila-metric-head {
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+#tab-fila .fila-metric-icon {
+  width: 48px !important;
+  height: 48px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--fila-accent, #4a73b8) 10%, #ffffff) !important;
+  border: 1px solid color-mix(in srgb, var(--fila-accent, #4a73b8) 20%, #d9e3ef) !important;
+  color: var(--fila-accent, #4a73b8) !important;
+}
+
+#tab-fila .fila-metric-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+#tab-fila .fila-metric-kicker {
+  margin: 0 0 4px !important;
+}
+
+#tab-fila .fila-metric-card h3 {
+  margin: 0 !important;
+}
+
+#tab-fila .fila-metric-card::after {
+  display: none !important;
+}
+
+#tab-fila .fila-table tbody td:nth-child(5),
+#tab-fila .fila-table tbody td:nth-child(6) {
+  color: #37506b !important;
+  font-weight: 600 !important;
+}
+
+#tab-estoque .item-delivery-stack {
+  display: grid;
+  gap: 8px;
+}
+
+#tab-estoque .item-delivery-current {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #4d607a;
+}
+
+#tab-estoque .item-delivery-select {
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid #d5deea;
+  background: #fff;
+  padding: 0 12px;
+  font-size: 0.88rem;
+  color: #1d2d42;
+}
+
+#tab-estoque .stock-card {
+  padding: 14px 16px !important;
+}
+
+#tab-estoque .stock-card-head {
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+#tab-estoque .stock-card-icon {
+  width: 48px !important;
+  height: 48px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 16px !important;
+  background: linear-gradient(180deg, #f8fbfe 0%, #edf3f9 100%) !important;
+  border: 1px solid #d9e2ee !important;
+  color: #34517c !important;
+}
+
+#tab-estoque .stock-card-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+#tab-estoque .stock-card-copy {
+  min-width: 0 !important;
+}
+
+#tab-estoque .stock-card-copy h4 {
+  margin: 0 0 4px !important;
+}
+
+#tab-estoque .stock-card-copy p {
+  margin: 0 !important;
+}
+
+#tab-estoque .snack-grid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.9fr) !important;
+  align-items: start !important;
+}
+
+#tab-estoque .snack-card {
+  display: grid !important;
+  gap: 14px !important;
+  padding: 16px !important;
+  border-radius: 18px !important;
+  border: 1px solid #dbe3ee !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafd 100%) !important;
+  box-shadow: var(--shadow-panel-soft) !important;
+}
+
+#tab-estoque .snack-card-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+#tab-estoque .snack-sub {
+  color: #607089 !important;
+}
+
+#tab-estoque .snack-balance-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+#tab-estoque .snack-balance-label {
+  display: inline-flex !important;
+  font-size: 0.76rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #607089 !important;
+  margin-bottom: 4px !important;
+}
+
+#tab-estoque .snack-balance {
+  margin-top: 0 !important;
+  line-height: 1 !important;
+  color: #12243a !important;
+}
+
+#tab-estoque .snack-actions-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+#tab-estoque .snack-action-block {
+  display: grid !important;
+  gap: 10px !important;
+  padding: 14px !important;
+  border-radius: 16px !important;
+  border: 1px solid #e0e7f0 !important;
+  background: linear-gradient(180deg, #fbfcfe 0%, #f5f8fb 100%) !important;
+}
+
+#tab-estoque .snack-action-head {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+
+#tab-estoque .snack-action-head strong {
+  font-size: 0.88rem !important;
+  color: #15263c !important;
+}
+
+#tab-estoque .snack-manual-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+}
+
+#tab-estoque .snack-manual-row input,
+#tab-estoque .snack-note-field input {
+  min-height: 40px !important;
+  border-radius: 12px !important;
+  border: 1px solid #d5deea !important;
+  background: #ffffff !important;
+  padding: 0 12px !important;
+  font-size: 0.88rem !important;
+}
+
+#tab-estoque .snack-note-field {
+  display: grid !important;
+  gap: 6px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  color: #31425c !important;
+}
+
+#tab-estoque .snack-permission-note {
+  margin: 0 !important;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+#tab-estoque .snack-history {
+  padding: 14px !important;
+}
+
+#tab-estoque .snack-history .panel-collapse-toggle {
+  width: 100% !important;
+  align-items: center !important;
+}
+
+#tab-estoque .snack-history .panel-collapse-toggle strong {
+  font-size: 0.98rem !important;
+  color: #16253c !important;
+}
+
+#tab-estoque .snack-history-toggle-side {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+#tab-estoque .snack-history-scroll {
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+#tab-estoque .snack-history .history-list {
+  margin: 0 !important;
+}
+
+#tab-estoque .snack-history .history-list li {
+  border: 1px solid #e6edf5;
+  border-radius: 14px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+
+@media (max-width: 920px) {
+  #tab-estoque .snack-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #tab-estoque .snack-actions-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .student-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #tab-fila .fila-metric-head {
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+  }
+
+  #tab-fila .fila-metric-icon,
+  #tab-estoque .stock-card-icon {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+  }
+
+  #tab-estoque .snack-manual-row {
+    grid-template-columns: 1fr !important;
+  }
+}

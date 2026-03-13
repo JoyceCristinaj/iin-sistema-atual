@@ -253,6 +253,68 @@
     if ($("semResposta")) $("semResposta").textContent = String(semResposta);
   }
 
+  function filaMetricIconSvg(variant) {
+    const icons = {
+      mes: `
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M7 3V6M17 3V6M4 9H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M9 13H12M12 13H15M12 10V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      `,
+      confirmadas: `
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M8.8 12.2L11.1 14.5L15.6 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `,
+      aguardando: `
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M9 3H15M9 21H15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M8 5.5C8 8 10 8.5 10 10.5C10 12.2 8.2 13 8.2 15.3C8.2 18.1 10.4 20 12 20C13.6 20 15.8 18.1 15.8 15.3C15.8 13 14 12.2 14 10.5C14 8.5 16 8 16 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      `,
+      "sem-resposta": `
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M8 18H6C4.9 18 4 17.1 4 16V7C4 5.9 4.9 5 6 5H18C19.1 5 20 5.9 20 7V16C20 17.1 19.1 18 18 18H12L8 21V18Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M12 9V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="12" cy="15.2" r="0.9" fill="currentColor"/>
+        </svg>
+      `,
+    };
+    return icons[variant] || icons.mes;
+  }
+
+  function decorateFilaMetricCards() {
+    document.querySelectorAll(".fila-metric-card").forEach((card) => {
+      if (card.dataset.decorated === "1") return;
+
+      const kicker = card.querySelector(".fila-metric-kicker");
+      const value = card.querySelector("h3");
+      const note = card.querySelector(".fila-metric-note");
+      if (!kicker || !value || !note) return;
+
+      const variant = card.dataset.variant || "mes";
+      const kickerText = kicker.textContent;
+      const valueId = value.id;
+      const valueText = value.textContent;
+      const noteText = note.textContent;
+
+      card.innerHTML = `
+        <div class="fila-metric-head">
+          <span class="fila-metric-icon" aria-hidden="true">${filaMetricIconSvg(variant)}</span>
+          <div>
+            <p class="fila-metric-kicker">${escapeHtml(kickerText)}</p>
+            <h3 id="${escapeHtml(valueId)}">${escapeHtml(valueText)}</h3>
+          </div>
+        </div>
+        <span class="fila-metric-note">${escapeHtml(noteText)}</span>
+      `;
+
+      card.dataset.decorated = "1";
+    });
+  }
+
   function makeWhatsappLink(phone, message) {
     const num = String(phone || "").replace(/\D/g, "");
     if (!num) return "";
@@ -584,6 +646,8 @@
   }
 
   function initFilaAdmin() {
+    decorateFilaMetricCards();
+
     const btnAtualizar = $("btnAtualizarFila");
     const btnApi = $("btnApiKeyFila");
     const busca = $("filaBusca");

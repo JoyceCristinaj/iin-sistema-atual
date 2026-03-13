@@ -111,6 +111,8 @@ function renderSnackHistory(weekKey) {
   rows = rows.slice(0, 30);
 
   ui.snackHistoryBadge.textContent = String(rows.length);
+  const historyTitle = document.querySelector("#snackHistoryPanel .panel-collapse-toggle strong");
+  if (historyTitle) historyTitle.textContent = `Ultimos movimentos (${rows.length})`;
   ui.snackHistoryList.innerHTML = "";
 
   if (!rows.length) {
@@ -126,7 +128,7 @@ function renderSnackHistory(weekKey) {
   });
 }
 
-function applySnackDelta(nucleus, delta) {
+function applySnackDelta(nucleus, delta, note = "") {
   const user = currentUser();
   if (!user) return;
 
@@ -278,6 +280,80 @@ nuclei.forEach((nucleus) => {
         ? `<p class="muted" style="margin-top:8px;font-size:.85rem">Sem permissão para movimentar o estoque.</p>`
         : mode === "prof"
           ? `<p class="muted" style="margin-top:8px;font-size:.85rem">Você pode dar baixa (lanche entregue). Reposição é somente Admin/Gestão.</p>`
+          : ``
+    }
+  `;
+
+  card.innerHTML = `
+    <div class="snack-card-head">
+      <div>
+        <h3 class="snack-title">${escapeHtml(nucleus)}</h3>
+        <div class="snack-sub">Controle semanal de saldo e movimentacao</div>
+      </div>
+      <span class="snack-pill ${low ? "low" : ""}">${low ? "Saldo baixo" : "Estavel"}</span>
+    </div>
+
+    <div class="snack-balance-row">
+      <div>
+        <span class="snack-balance-label">Saldo semanal</span>
+        <div class="snack-balance">${balance}</div>
+      </div>
+    </div>
+
+    <div class="snack-actions-grid">
+      <section class="snack-action-block snack-action-entry">
+        <div class="snack-action-head">
+          <strong>Entrada</strong>
+          <span class="muted">Reposicao</span>
+        </div>
+        <div class="snack-quick">
+          <button type="button" class="positive"
+            data-snack-n="${escapeHtml(nucleus)}" data-snack-d="1"
+            ${canAdd ? "" : "disabled"}>Entrada +1</button>
+          <button type="button" class="positive"
+            data-snack-n="${escapeHtml(nucleus)}" data-snack-d="5"
+            ${canAdd ? "" : "disabled"}>Entrada +5</button>
+        </div>
+        <div class="snack-manual-row">
+          <input type="number" value="1" min="1" step="1"
+            data-snack-custom="${escapeHtml(nucleus)}" data-snack-mode="entry" ${canAdd ? "" : "disabled"}>
+          <button type="button" class="apply"
+            data-snack-apply="${escapeHtml(nucleus)}" data-snack-mode="entry" ${canAdd ? "" : "disabled"}>Aplicar</button>
+        </div>
+      </section>
+
+      <section class="snack-action-block snack-action-exit">
+        <div class="snack-action-head">
+          <strong>Saida</strong>
+          <span class="muted">Baixa do consumo</span>
+        </div>
+        <div class="snack-quick">
+          <button type="button" class="negative"
+            data-snack-n="${escapeHtml(nucleus)}" data-snack-d="-1"
+            ${canRemove ? "" : "disabled"}>Saida -1</button>
+          <button type="button" class="negative"
+            data-snack-n="${escapeHtml(nucleus)}" data-snack-d="-5"
+            ${canRemove ? "" : "disabled"}>Saida -5</button>
+        </div>
+        <div class="snack-manual-row">
+          <input type="number" value="1" min="1" step="1"
+            data-snack-custom="${escapeHtml(nucleus)}" data-snack-mode="exit" ${canRemove ? "" : "disabled"}>
+          <button type="button" class="apply"
+            data-snack-apply="${escapeHtml(nucleus)}" data-snack-mode="exit" ${canRemove ? "" : "disabled"}>Aplicar</button>
+        </div>
+      </section>
+    </div>
+
+    <label class="snack-note-field">Observacao
+      <input type="text" placeholder="Reposicao, entrega em aula, ajuste..."
+        data-snack-note="${escapeHtml(nucleus)}" ${canAdd || canRemove ? "" : "disabled"}>
+    </label>
+
+    ${
+      mode === "none"
+        ? `<p class="muted snack-permission-note">Sem permissao para movimentar o estoque.</p>`
+        : mode === "prof"
+          ? `<p class="muted snack-permission-note">Voce pode registrar saidas. Entradas ficam com Admin/Gestao.</p>`
           : ``
     }
   `;

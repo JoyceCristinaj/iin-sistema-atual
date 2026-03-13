@@ -64,10 +64,8 @@ function renderBoard(target, students, actor) {
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
       .forEach((student) => {
         const card = ui.attendanceCardTemplate.content.firstElementChild.cloneNode(true);
-        const f = frequencyOf(student);
 
         card.querySelector(".student-name").textContent = student.name;
-        card.querySelector(".freq-pill").textContent = `${f.pct}% (${f.present}/${f.total || 0})`;
 
         const contactLine = [
           student.contact ? `Aluno: ${student.contact}` : "",
@@ -80,6 +78,14 @@ function renderBoard(target, students, actor) {
           `Turma/Horário: ${student.nucleus} • ${staff.classSchedule || student.classSchedule || "horário não informado"}`;
 
         card.querySelector(".student-status").textContent = `Status (último): ${student.attendance || "não registrado"}`;
+
+        const classInfoNode = card.querySelector(".student-class-info");
+        if (classInfoNode) {
+          classInfoNode.textContent = `Turma / Horario: ${staff.classSchedule || student.classSchedule || "horario nao informado"}`;
+        }
+        card.querySelector(".student-contact")?.remove();
+        card.querySelector(".student-status")?.remove();
+        card.querySelector(".freq-pill")?.remove();
 
         const classDate = staff.classDate || "";
         const enforceRules = () => {
