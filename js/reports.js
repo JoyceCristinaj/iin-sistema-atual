@@ -22,7 +22,7 @@ function makeReportDocId(projectKey = state.currentProjectKey) {
   return `IIN-${String(projectKey || "PRJ").toUpperCase()}-${stamp}-${rnd}`;
 }
 
-/* ========= BOARD (PROF/GESTÃO) ========= */
+/* ========= BOARD (PROF/GESTAO) ========= */
 function renderBoard(target, students, actor) {
   if (!target || !ui.attendanceCardTemplate) return;
   target.innerHTML = "";
@@ -30,11 +30,12 @@ function renderBoard(target, students, actor) {
   const nuclei = actor.role === "professor" ? [actor.nucleus] : getVisibleNuclei();
 
   nuclei.forEach((nucleus) => {
-    let grouped = students.filter((s) => s.nucleus === nucleus);
-    if (state.search) grouped = grouped.filter((s) => safeLower(s.name).includes(state.search));
+    let grouped = students.filter((student) => student.nucleus === nucleus);
+    if (state.search) grouped = grouped.filter((student) => safeLower(student.name).includes(state.search));
 
     const staff = getAttendanceStaffByNucleus(nucleus);
-    const lock = getLock(nucleus);
+    const context = actor.role === "professor" ? getProfessorAttendanceContext(nucleus) : null;
+    const classDate = staff.classDate || "";
 
     const column = document.createElement("article");
     column.className = "nucleus-column";
@@ -44,13 +45,19 @@ function renderBoard(target, students, actor) {
         <span class="badge">${grouped.length}</span>
       </div>
       <p class="class-meta">
-        Data: ${staff.classDate ? formatDateLabel(staff.classDate) : "não definida"}
-        • Turma: ${escapeHtml(staff.classSchedule || "horário não definido")}
-        • Instrutor: ${escapeHtml(staff.professorName || "não informado")}
-        • Monitor: ${escapeHtml(staff.monitorName || "não informado")}
-        ${lock.locked ? " • ✅ Aula encerrada" : ""}
+        Data: ${staff.classDate ? formatDateLabel(staff.classDate) : "nao definida"}
+        • Turma: ${escapeHtml(staff.classSchedule || "horario nao definido")}
+        • Instrutor: ${escapeHtml(staff.professorName || "nao informado")}
+        • Monitor: ${escapeHtml(staff.monitorName || "nao informado")}
       </p>
     `;
+
+    if (context?.noClassRecord) {
+      const note = document.createElement("div");
+      note.className = "attendance-no-class-note";
+      note.textContent = `Sem aula registrada: ${context.noClassRecord.reason || "motivo nao informado"}`;
+      column.appendChild(note);
+    }
 
     if (!grouped.length) {
       const empty = document.createElement("p");
@@ -66,36 +73,24 @@ function renderBoard(target, students, actor) {
         const card = ui.attendanceCardTemplate.content.firstElementChild.cloneNode(true);
 
         card.querySelector(".student-name").textContent = student.name;
-
-        const contactLine = [
-          student.contact ? `Aluno: ${student.contact}` : "",
-          student.guardian?.phone ? `Resp: ${student.guardian.phone}` : "",
-          student.guardian?.email || "",
-        ].filter(Boolean).join(" • ");
-        card.querySelector(".student-contact").textContent = contactLine || "Contato não informado";
-
-        card.querySelector(".student-class-info").textContent =
-          `Turma/Horário: ${student.nucleus} • ${staff.classSchedule || student.classSchedule || "horário não informado"}`;
-
-        card.querySelector(".student-status").textContent = `Status (último): ${student.attendance || "não registrado"}`;
-
-        const classInfoNode = card.querySelector(".student-class-info");
-        if (classInfoNode) {
-          classInfoNode.textContent = `Turma / Horario: ${staff.classSchedule || student.classSchedule || "horario nao informado"}`;
-        }
+        card.querySelector(".student-class-info").textContent = `Turma / Horario: ${staff.classSchedule || student.classSchedule || "horario nao informado"}`;
         card.querySelector(".student-contact")?.remove();
         card.querySelector(".student-status")?.remove();
         card.querySelector(".freq-pill")?.remove();
 
-        const classDate = staff.classDate || "";
+        const currentStatus = classDate ? getAttendanceStatusForDate(student, classDate) : "";
+        card.querySelector(".btn-present")?.classList.toggle("is-selected", currentStatus === "presente");
+        card.querySelector(".btn-absent")?.classList.toggle("is-selected", currentStatus === "falta");
+        card.querySelector(".btn-justified")?.classList.toggle("is-selected", currentStatus === "justificado");
+        card.querySelectorAll(".student-actions button").forEach((button) => {
+          button.disabled = actor.role === "professor" && !context?.isUnlocked;
+        });
+
         const enforceRules = () => {
           if (actor.role !== "professor") return true;
-          if (!classDate) {
-            ui.professorClassStatus.textContent = "⚠️ Salve a DATA DA AULA antes de marcar presença.";
-            return false;
-          }
-          if (lock.locked && lock.lockedDate === classDate) {
-            ui.professorClassStatus.textContent = "⚠️ Aula encerrada. Não é possível alterar.";
+          if (!context?.isUnlocked) {
+            ui.professorClassStatus.textContent = professorAttendanceUnlockMessage(context || getProfessorAttendanceContext(nucleus));
+            setProfessorAttendanceFeedback("action", professorAttendanceUnlockMessage(context || getProfessorAttendanceContext(nucleus)), "error");
             return false;
           }
           return true;
@@ -108,6 +103,13 @@ function renderBoard(target, students, actor) {
           pushHistory(student, actor, "chamada", `Status: ${attendanceCode(status)} (${formatDateLabel(classDate || isoToday())})`);
           if (actor.role === "professor") {
             pushNucleusLog(nucleus, "Chamada", `${student.name} → ${attendanceCode(status)}`, actor);
+            const feedbackMap = {
+              presente: "Presenca confirmada.",
+              falta: "Falta registrada.",
+              justificado: "Justificativa registrada.",
+            };
+            setProfessorAttendanceFeedback("action", feedbackMap[status] || "Status registrado.", "success");
+            setProfessorAttendanceFeedback("final", "", "");
           }
           persist();
           render();
@@ -116,7 +118,6 @@ function renderBoard(target, students, actor) {
         card.querySelector(".btn-present")?.addEventListener("click", () => setStatus("presente"));
         card.querySelector(".btn-absent")?.addEventListener("click", () => setStatus("falta"));
         card.querySelector(".btn-justified")?.addEventListener("click", () => setStatus("justificado"));
-        card.querySelector(".btn-sa")?.addEventListener("click", () => setStatus("sa"));
 
         column.appendChild(card);
       });
@@ -124,7 +125,6 @@ function renderBoard(target, students, actor) {
     target.appendChild(column);
   });
 }
-
 /* ========= DASHBOARD ========= */
 function renderMetrics() {
   const students = getProjectStudents();

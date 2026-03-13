@@ -58,6 +58,13 @@ function upsertAttendanceLog(student, dateISO, status, meta = {}) {
   if (idx === -1) log.push(row);
   else log[idx] = row;
 }
+function getAttendanceStatusForDate(student, dateISO) {
+  const targetDate = String(dateISO || "").trim();
+  if (!targetDate) return "";
+  const key = `${state.currentProjectKey}|${targetDate}`;
+  const row = ensureAttendanceLog(student).find((item) => item.key === key);
+  return row?.status || "";
+}
 function frequencyOf(student) {
   const log = ensureAttendanceLog(student).filter((x) => x.project === state.currentProjectKey);
   const effective = log.filter((x) => x.status !== "sa");
@@ -95,36 +102,122 @@ function calcAge(birthDateStr) {
 }
 
 /* ========= PROFESSOR AULA ========= */
-function saveAttendanceStaff(nucleus) {
-  const staff = getAttendanceStaffByNucleus(nucleus);
-  const lock = getLock(nucleus);
-
-  if (lock.locked && lock.lockedDate === (ui.professorClassDate?.value || staff.classDate)) {
-    ui.professorClassStatus.textContent = "Aula já foi encerrada para esta data.";
+function setProfessorAttendanceFeedback(kind, message = "", tone = "") {
+  const normalizedTone = tone || "";
+  if (kind === "action") {
+    state.attendanceUI.professorActionMessage = message;
+    state.attendanceUI.professorActionTone = normalizedTone;
     return;
   }
+  state.attendanceUI.professorFinalMessage = message;
+  state.attendanceUI.professorFinalTone = normalizedTone;
+}
 
+function syncAttendanceStaffDraft(nucleus, { persistDraft = true } = {}) {
+  const staff = getAttendanceStaffByNucleus(nucleus);
   staff.classDate = ui.professorClassDate?.value || "";
   staff.classSchedule = ui.professorClassSchedule?.value?.trim() || "";
   staff.professorName = ui.professorClassProfessorName?.value?.trim() || "";
   staff.monitorName = ui.professorClassMonitorName?.value?.trim() || "";
+  if (persistDraft) persist();
+  return staff;
+}
+
+function getProfessorAttendanceContext(nucleus) {
+  const staff = getAttendanceStaffByNucleus(nucleus);
+  const missing = [];
+
+  if (!staff.classDate) missing.push("data");
+  if (!staff.classSchedule) missing.push("turma");
+  if (!staff.monitorName) missing.push("monitor");
+  if (!staff.professorName) missing.push("instrutor");
+
+  const students = getProjectStudents().filter((student) => student.nucleus === nucleus);
+  const filled = staff.classDate
+    ? students.filter((student) => Boolean(getAttendanceStatusForDate(student, staff.classDate))).length
+    : 0;
+  const noClassRecord = getNoClassRecord(nucleus, staff.classDate, staff.classSchedule);
+
+  return {
+    staff,
+    missing,
+    students,
+    total: students.length,
+    filled,
+    isUnlocked: missing.length === 0 && !noClassRecord,
+    isComplete: students.length > 0 && filled === students.length,
+    noClassRecord,
+  };
+}
+
+function professorAttendanceUnlockMessage(context) {
+  if (context.noClassRecord) {
+    const reason = context.noClassRecord.reason ? ` Motivo: ${context.noClassRecord.reason}.` : "";
+    return `Sem aula registrada para ${formatDateLabel(context.noClassRecord.date)} • ${context.noClassRecord.schedule}.${reason}`;
+  }
+
+  if (!context.missing.length) {
+    return "Lista liberada. Marque a presenca de todos os alunos e finalize o registro.";
+  }
+
+  return "Preencha data, turma, monitor e instrutor para liberar a chamada.";
+}
+function saveAttendanceStaff(nucleus) {
+  const staff = syncAttendanceStaffDraft(nucleus);
 
   if (!staff.classDate) {
     ui.professorClassStatus.textContent = "Defina a data da aula.";
   } else if (!staff.classSchedule) {
-    ui.professorClassStatus.textContent = "Selecione o horário da aula.";
+    ui.professorClassStatus.textContent = "Selecione o horario da aula.";
+  } else if (!staff.professorName) {
+    ui.professorClassStatus.textContent = "Informe o instrutor responsavel pela aula.";
+  } else if (!staff.monitorName) {
+    ui.professorClassStatus.textContent = "Informe o monitor da aula.";
   } else {
-    ui.professorClassStatus.textContent = "Dados da aula salvos. Agora você pode marcar presença.";
+    ui.professorClassStatus.textContent = "Dados da chamada salvos. Agora voce pode preencher a lista.";
   }
 
+  render();
+}
+
+function confirmAttendanceList(nucleus) {
+  const context = getProfessorAttendanceContext(nucleus);
+  if (context.noClassRecord) {
+    setProfessorAttendanceFeedback("final", "Essa turma esta marcada como sem aula para a data e horario selecionados.", "error");
+    render();
+    return;
+  }
+
+  if (!context.isUnlocked) {
+    setProfessorAttendanceFeedback("final", professorAttendanceUnlockMessage(context), "error");
+    render();
+    return;
+  }
+
+  if (!context.isComplete) {
+    setProfessorAttendanceFeedback("final", `Faltam ${context.total - context.filled} aluno(s) para concluir a lista.`, "error");
+    render();
+    return;
+  }
+
+  const user = currentUser();
+  const summary = `${formatDateLabel(context.staff.classDate)} • ${context.staff.classSchedule}`;
+  pushNucleusLog(nucleus, "Lista de presenca registrada", summary, user);
   persist();
+
+  setProfessorAttendanceFeedback(
+    "final",
+    `Lista de presenca registrada com sucesso - Data: ${formatDateLabel(context.staff.classDate)} • Turma: ${context.staff.classSchedule}`,
+    "success"
+  );
+  setProfessorAttendanceFeedback("action", "", "");
   render();
 }
 
 function lockClass(nucleus) {
   const staff = getAttendanceStaffByNucleus(nucleus);
   if (!staff.classDate) {
-    ui.professorClassStatus.textContent = "⚠️ Defina e salve a data da aula antes de encerrar.";
+    ui.professorClassStatus.textContent = "Defina e salve a data da aula antes de encerrar.";
     return;
   }
 
@@ -137,8 +230,117 @@ function lockClass(nucleus) {
   pushNucleusLog(nucleus, "Aula encerrada", `Data ${formatDateLabel(staff.classDate)}`, user);
 
   persist();
-  ui.professorClassStatus.textContent = "Aula encerrada. Presenças congeladas para esta data.";
+  ui.professorClassStatus.textContent = "Aula encerrada. Presencas congeladas para esta data.";
   render();
+}
+
+function setNoClassStatus(message = "", isError = false) {
+  if (!ui.noClassStatus) return;
+  ui.noClassStatus.textContent = message;
+  ui.noClassStatus.classList.remove("report-status-success", "report-status-error");
+  if (message) ui.noClassStatus.classList.add(isError ? "report-status-error" : "report-status-success");
+}
+
+function hydrateNoClassNucleusOptions() {
+  if (!ui.noClassNucleus) return;
+  const current = ui.noClassNucleus.value || "";
+  ui.noClassNucleus.innerHTML = `<option value="">Selecione o nucleo</option>`;
+  getVisibleNuclei().forEach((nucleus) => {
+    const option = document.createElement("option");
+    option.value = nucleus;
+    option.textContent = nucleus;
+    ui.noClassNucleus.appendChild(option);
+  });
+  ui.noClassNucleus.value = [...ui.noClassNucleus.options].some((option) => option.value === current) ? current : "";
+}
+
+function renderNoClassAdminPanel() {
+  if (!ui.noClassList || !ui.noClassCountBadge) return;
+  const records = getProjectNoClassRecords()
+    .slice()
+    .sort((a, b) => `${b.date || ""}${b.schedule || ""}`.localeCompare(`${a.date || ""}${a.schedule || ""}`));
+
+  ui.noClassCountBadge.textContent = `${records.length} registro${records.length === 1 ? "" : "s"}`;
+  ui.noClassList.innerHTML = "";
+
+  if (!records.length) {
+    const empty = document.createElement("div");
+    empty.className = "panel-lite no-class-empty";
+    empty.textContent = "Nenhum registro de sem aula salvo neste projeto.";
+    ui.noClassList.appendChild(empty);
+    return;
+  }
+
+  records.forEach((record) => {
+    const item = document.createElement("article");
+    item.className = "panel-lite no-class-item";
+    item.innerHTML = `
+      <div class="no-class-item-head">
+        <strong>${escapeHtml(record.nucleus)}</strong>
+        <span class="badge">${formatDateLabel(record.date)}</span>
+      </div>
+      <p class="no-class-item-meta">Turma / Horario: ${escapeHtml(record.schedule)}</p>
+      <p class="no-class-item-reason">${escapeHtml(record.reason || "Sem justificativa informada")}</p>
+      <div class="toolbar compact">
+        <button type="button" class="ghost small-btn" data-no-class-remove="${record.id}">Remover</button>
+      </div>
+    `;
+    item.querySelector("[data-no-class-remove]")?.addEventListener("click", () => removeNoClassRecord(record.id));
+    ui.noClassList.appendChild(item);
+  });
+}
+
+function saveNoClassRecord() {
+  const user = currentUser();
+  if (!user || !["admin", "gestao"].includes(user.role)) return;
+
+  const date = ui.noClassDate?.value || "";
+  const nucleus = ui.noClassNucleus?.value || "";
+  const schedule = ui.noClassSchedule?.value || "";
+  const reason = ui.noClassReason?.value?.trim() || "";
+
+  if (!date || !nucleus || !schedule || !reason) {
+    setNoClassStatus("Preencha data, nucleo, turma/horario e justificativa para salvar.", true);
+    return;
+  }
+
+  const records = getProjectNoClassRecords();
+  const existing = getNoClassRecord(nucleus, date, schedule);
+  if (existing) {
+    existing.reason = reason;
+    existing.updatedAt = new Date().toISOString();
+    existing.updatedBy = user.username;
+  } else {
+    records.unshift({
+      id: crypto.randomUUID(),
+      date,
+      nucleus,
+      schedule,
+      reason,
+      createdAt: new Date().toISOString(),
+      createdBy: user.username,
+    });
+  }
+
+  pushNucleusLog(nucleus, "Sem aula", `${formatDateLabel(date)} • ${schedule} • ${reason}`, user);
+  persist();
+  setNoClassStatus("Registro de sem aula salvo com sucesso.");
+  renderNoClassAdminPanel();
+}
+
+function removeNoClassRecord(recordId) {
+  const user = currentUser();
+  if (!user || !["admin", "gestao"].includes(user.role)) return;
+
+  const records = getProjectNoClassRecords();
+  const index = records.findIndex((record) => record.id === recordId);
+  if (index < 0) return;
+
+  const [removed] = records.splice(index, 1);
+  pushNucleusLog(removed.nucleus, "Sem aula removido", `${formatDateLabel(removed.date)} • ${removed.schedule}`, user);
+  persist();
+  setNoClassStatus("Registro de sem aula removido com sucesso.");
+  renderNoClassAdminPanel();
 }
 
 /* ========= PLANEJAMENTO ========= */

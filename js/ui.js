@@ -78,8 +78,12 @@ tabPages: [
   professorScheduleHint: el("professorScheduleHint"),
   professorClassSave: el("professorClassSave"),
   professorClassStatus: el("professorClassStatus"),
-  endClassBtn: el("endClassBtn"),
-  classLockBadge: el("classLockBadge"),
+  attendanceUnlockHint: el("attendanceUnlockHint"),
+  attendanceActionStatus: el("attendanceActionStatus"),
+  attendanceProgressBadge: el("attendanceProgressBadge"),
+  attendanceProgressText: el("attendanceProgressText"),
+  attendanceRegisterBtn: el("attendanceRegisterBtn"),
+  attendanceFinalStatus: el("attendanceFinalStatus"),
 
   teacherAbsHint: el("teacherAbsHint"),
   planningForm: el("planningForm"),
@@ -181,6 +185,15 @@ tabPages: [
   adminGenerateReportBtn: el("adminGenerateReportBtn"),
   adminPrintReportBtn: el("adminPrintReportBtn"),
   adminReportStatus: el("adminReportStatus"),
+  noClassDate: el("noClassDate"),
+  noClassNucleus: el("noClassNucleus"),
+  noClassSchedule: el("noClassSchedule"),
+  noClassScheduleHint: el("noClassScheduleHint"),
+  noClassReason: el("noClassReason"),
+  noClassSaveBtn: el("noClassSaveBtn"),
+  noClassStatus: el("noClassStatus"),
+  noClassList: el("noClassList"),
+  noClassCountBadge: el("noClassCountBadge"),
   printType: el("printType"),
   printCustomBox: el("printCustomBox"),
   printFieldsGrid: el("printFieldsGrid"),
@@ -366,6 +379,57 @@ function hydrateProfessorScheduleOptions(nucleus, dateISO = ui.professorClassDat
       ui.professorScheduleHint.textContent = weekday
         ? `${schedules.length} horário(s) disponível(is) para ${weekday}.`
         : `${schedules.length} horário(s) disponível(is).`;
+    }
+  }
+}
+
+function hydrateNoClassScheduleOptions(nucleus = ui.noClassNucleus?.value || "", dateISO = ui.noClassDate?.value || "", currentValue = "") {
+  if (!ui.noClassSchedule) return;
+
+  const schedules = nucleus ? getNucleusScheduleOptions(nucleus, dateISO) : [];
+  const select = ui.noClassSchedule;
+  const selected = String(currentValue || select.value || "").trim();
+  const weekday = getWeekdayLabel(dateISO);
+
+  select.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = schedules.length
+    ? "Selecione a turma / horario"
+    : "Nenhum horario disponivel para este nucleo/data";
+  select.appendChild(placeholder);
+
+  schedules.forEach((schedule) => {
+    const opt = document.createElement("option");
+    opt.value = schedule;
+    opt.textContent = schedule;
+    select.appendChild(opt);
+  });
+
+  if (selected && !schedules.includes(selected)) {
+    const legacy = document.createElement("option");
+    legacy.value = selected;
+    legacy.textContent = `${selected} (salvo)`;
+    select.appendChild(legacy);
+  }
+
+  select.disabled = !nucleus || (schedules.length === 0 && !selected);
+  select.value = selected && [...select.options].some((option) => option.value === selected) ? selected : "";
+
+  if (ui.noClassScheduleHint) {
+    if (!nucleus) {
+      ui.noClassScheduleHint.textContent = "Selecione o nucleo para carregar os horarios.";
+    } else if (!dateISO) {
+      ui.noClassScheduleHint.textContent = "Defina a data para carregar os horarios compativeis.";
+    } else if (!schedules.length) {
+      ui.noClassScheduleHint.textContent = weekday
+        ? `Nenhum horario ativo para ${weekday}. Verifique a grade padrao ou uma excecao por data.`
+        : "Nenhum horario compativel com a data informada.";
+    } else {
+      ui.noClassScheduleHint.textContent = weekday
+        ? `${schedules.length} horario(s) disponivel(is) para ${weekday}.`
+        : `${schedules.length} horario(s) disponivel(is).`;
     }
   }
 }

@@ -290,9 +290,20 @@ ui.snackTodayBtn?.addEventListener("click", () => {
     if (user?.role === "professor") saveAttendanceStaff(user.nucleus);
   });
 
-  ui.endClassBtn?.addEventListener("click", () => {
+  [ui.professorClassProfessorName, ui.professorClassMonitorName].forEach((field) => {
+    field?.addEventListener("input", () => {
+      const user = currentUser();
+      if (user?.role !== "professor") return;
+      syncAttendanceStaffDraft(user.nucleus);
+      renderProfessorArea(user);
+    });
+  });
+
+  ui.professorClassSchedule?.addEventListener("change", () => {
     const user = currentUser();
-    if (user?.role === "professor") lockClass(user.nucleus);
+    if (user?.role !== "professor") return;
+    syncAttendanceStaffDraft(user.nucleus);
+    renderProfessorArea(user);
   });
 
   // Planejamento / histórico
@@ -308,8 +319,15 @@ ui.snackTodayBtn?.addEventListener("click", () => {
     const user = currentUser();
     if (user?.role === "professor") {
       hydrateProfessorScheduleOptions(user.nucleus, ui.professorClassDate?.value || "", "");
+      syncAttendanceStaffDraft(user.nucleus);
+      renderProfessorArea(user);
       syncTeacherSupportForm?.();
     }
+  });
+
+  ui.attendanceRegisterBtn?.addEventListener("click", () => {
+    const user = currentUser();
+    if (user?.role === "professor") confirmAttendanceList(user.nucleus);
   });
 
   ui.teacherAbsType?.addEventListener("change", () => syncTeacherSupportForm?.());
@@ -326,6 +344,10 @@ ui.snackTodayBtn?.addEventListener("click", () => {
     if (!user || user.role !== "professor") return;
     copyToClipboard(buildTeacherWhatsappText(user.nucleus));
   });
+
+  ui.noClassNucleus?.addEventListener("change", () => hydrateNoClassScheduleOptions());
+  ui.noClassDate?.addEventListener("change", () => hydrateNoClassScheduleOptions());
+  ui.noClassSaveBtn?.addEventListener("click", saveNoClassRecord);
 
   // Gestão: aluno / calendário
   ui.studentForm?.addEventListener("submit", onAddStudent);
@@ -668,6 +690,9 @@ renderNucleusCounts();
 renderVisitors();
 renderClassDays();
 renderAttendanceReport();
+hydrateNoClassNucleusOptions?.();
+hydrateNoClassScheduleOptions?.();
+renderNoClassAdminPanel?.();
 hydrateGestaoAlunoFiltroNucleo();
 renderListaAlunosGestao();
 renderScheduleConfigEditor?.();
@@ -723,11 +748,39 @@ function renderProfessorArea(user) {
   if (ui.professorClassProfessorName) ui.professorClassProfessorName.value = staff.professorName || "";
   if (ui.professorClassMonitorName) ui.professorClassMonitorName.value = staff.monitorName || "";
 
-  const lock = getLock(user.nucleus);
-  ui.classLockBadge?.classList.toggle("hidden", !(lock.locked && lock.lockedDate === staff.classDate));
-
   const students = getProjectStudents().filter((s) => s.nucleus === user.nucleus);
   renderBoard(ui.professorBoard, students, user);
+
+  const context = getProfessorAttendanceContext(user.nucleus);
+  if (ui.attendanceProgressBadge) {
+    ui.attendanceProgressBadge.textContent = context.noClassRecord ? "Sem aula" : `${context.filled} de ${context.total}`;
+  }
+  if (ui.attendanceProgressText) {
+    ui.attendanceProgressText.textContent = context.noClassRecord
+      ? "A turma esta marcada como sem aula para o contexto selecionado."
+      : context.isComplete
+        ? "Todos os alunos foram preenchidos. A chamada ja pode ser registrada."
+        : `${context.filled} de ${context.total} alunos preenchidos.`;
+  }
+  if (ui.attendanceUnlockHint) {
+    ui.attendanceUnlockHint.textContent = professorAttendanceUnlockMessage(context);
+    ui.attendanceUnlockHint.classList.toggle("report-status-error", Boolean(context.noClassRecord));
+  }
+  if (ui.attendanceRegisterBtn) {
+    ui.attendanceRegisterBtn.disabled = !context.isUnlocked || !context.isComplete;
+  }
+  if (ui.attendanceActionStatus) {
+    ui.attendanceActionStatus.textContent = state.attendanceUI.professorActionMessage || "";
+    ui.attendanceActionStatus.classList.toggle("hidden", !state.attendanceUI.professorActionMessage);
+    ui.attendanceActionStatus.classList.toggle("report-status-success", state.attendanceUI.professorActionTone === "success");
+    ui.attendanceActionStatus.classList.toggle("report-status-error", state.attendanceUI.professorActionTone === "error");
+  }
+  if (ui.attendanceFinalStatus) {
+    ui.attendanceFinalStatus.textContent = state.attendanceUI.professorFinalMessage || "";
+    ui.attendanceFinalStatus.classList.toggle("hidden", !state.attendanceUI.professorFinalMessage);
+    ui.attendanceFinalStatus.classList.toggle("report-status-success", state.attendanceUI.professorFinalTone === "success");
+    ui.attendanceFinalStatus.classList.toggle("report-status-error", state.attendanceUI.professorFinalTone === "error");
+  }
 
   renderPlanningList(user.nucleus);
   renderProfessorHistory(user.nucleus);

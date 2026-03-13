@@ -14,11 +14,18 @@ const state = {
   attendanceStaffByProject: {},
   planningByProject: {},
   classLocksByProject: {},
+  noClassByProject: {},
   nucleusLogsByProject: {},
   mestreDocsByProject: {},
   settingsByProject: {},
   supervisaoByProject: {},
   reportPrefs: { printType: "completo", fields: {} },
+  attendanceUI: {
+    professorActionMessage: "",
+    professorActionTone: "",
+    professorFinalMessage: "",
+    professorFinalTone: "",
+  },
 
   // Aulas
   lessonsByProject: {},
@@ -207,6 +214,9 @@ function createClassLocksByProject() {
       ),
     ])
   );
+}
+function createNoClassByProject() {
+  return Object.fromEntries(PROJECTS.map((p) => [p.key, []]));
 }
 function createMestreDocsByProject() {
   return Object.fromEntries(
@@ -507,6 +517,7 @@ function loadData() {
     state.attendanceStaffByProject = createAttendanceStaffByProject();
     state.planningByProject = {};
     state.classLocksByProject = createClassLocksByProject();
+    state.noClassByProject = createNoClassByProject();
     state.nucleusLogsByProject = {};
     state.mestreDocsByProject = createMestreDocsByProject();
     state.settingsByProject = createSettingsByProject();
@@ -561,6 +572,7 @@ function loadData() {
     state.attendanceStaffByProject = parsed.attendanceStaffByProject || createAttendanceStaffByProject();
     state.planningByProject = parsed.planningByProject || {};
     state.classLocksByProject = parsed.classLocksByProject || createClassLocksByProject();
+    state.noClassByProject = parsed.noClassByProject || createNoClassByProject();
     state.nucleusLogsByProject = parsed.nucleusLogsByProject || {};
     state.mestreDocsByProject = parsed.mestreDocsByProject || createMestreDocsByProject();
     state.settingsByProject = parsed.settingsByProject || createSettingsByProject();
@@ -589,6 +601,9 @@ function loadData() {
       }
       if (!state.supervisaoByProject[project.key]) {
         state.supervisaoByProject[project.key] = [];
+      }
+      if (!state.noClassByProject[project.key]) {
+        state.noClassByProject[project.key] = [];
       }
 
       getVisibleNuclei(project.key).forEach((nucleus) => {
@@ -636,6 +651,7 @@ function persist() {
       attendanceStaffByProject: state.attendanceStaffByProject,
       planningByProject: state.planningByProject,
       classLocksByProject: state.classLocksByProject,
+      noClassByProject: state.noClassByProject,
       nucleusLogsByProject: state.nucleusLogsByProject,
       mestreDocsByProject: state.mestreDocsByProject,
       settingsByProject: state.settingsByProject,
@@ -772,6 +788,21 @@ function getLock(nucleus) {
   const locks = getProjectLocks();
   if (!locks[nucleus]) locks[nucleus] = { locked: false, lockedAt: "", lockedDate: "" };
   return locks[nucleus];
+}
+function getProjectNoClassRecords(projectKey = state.currentProjectKey) {
+  if (!state.noClassByProject[projectKey]) state.noClassByProject[projectKey] = [];
+  return state.noClassByProject[projectKey];
+}
+function getNoClassRecord(nucleus, dateISO, schedule, projectKey = state.currentProjectKey) {
+  const targetNucleus = String(nucleus || "").trim();
+  const targetDate = String(dateISO || "").trim();
+  const targetSchedule = String(schedule || "").trim();
+  if (!targetNucleus || !targetDate || !targetSchedule) return null;
+  return getProjectNoClassRecords(projectKey).find((record) =>
+    String(record?.nucleus || "").trim() === targetNucleus &&
+    String(record?.date || "").trim() === targetDate &&
+    String(record?.schedule || "").trim() === targetSchedule
+  ) || null;
 }
 function ensureNucleusLogs(projectKey = state.currentProjectKey) {
   if (!state.nucleusLogsByProject[projectKey]) {

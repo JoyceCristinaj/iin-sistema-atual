@@ -315,35 +315,31 @@
             <span id="professorNucleusBadge" class="badge">Turma</span>
           </div>
 
-          <p class="muted">Preencha os dados da aula e selecione um horário válido do núcleo antes de registrar a presença.</p>
+          <p class="muted">Preencha os dados obrigatorios da aula para liberar a lista de presenca e concluir a chamada com seguranca.</p>
 
           <div class="grid-form two">
-            <label>Data da aula
-              <input id="professorClassDate" type="date" />
+            <label>Data da aula <span class="required-mark">*</span>
+              <input id="professorClassDate" type="date" required />
             </label>
 
-            <label>Turma / Horário
-              <select id="professorClassSchedule">
+            <label>Turma / Horario <span class="required-mark">*</span>
+              <select id="professorClassSchedule" required>
                 <option value="">Selecione o horário da aula</option>
               </select>
               <span id="professorScheduleHint" class="field-help muted"></span>
             </label>
 
-            <label>Colaborador responsável
-              <input id="professorClassProfessorName" type="text" placeholder="Nome do colaborador" />
+            <label>Instrutor <span class="required-mark">*</span>
+              <input id="professorClassProfessorName" type="text" placeholder="Nome do instrutor" required />
             </label>
 
-            <label>Monitor
-              <input id="professorClassMonitorName" type="text" placeholder="Nome do monitor" />
+            <label>Monitor <span class="required-mark">*</span>
+              <input id="professorClassMonitorName" type="text" placeholder="Nome do monitor" required />
             </label>
           </div>
 
           <div class="toolbar">
-            <button id="professorClassSave" class="primary" type="button">Salvar dados da aula</button>
-            <button id="endClassBtn" class="warn" type="button">Encerrar aula</button>
-            <button id="teacherWhatsappBtn" type="button" class="ghost">Abrir WhatsApp (grupo)</button>
-            <button id="teacherWhatsappCopy" type="button" class="ghost">Copiar texto da chamada</button>
-            <span id="classLockBadge" class="badge danger hidden">Aula encerrada</span>
+            <button id="professorClassSave" class="primary" type="button">Salvar dados da chamada</button>
           </div>
 
           <p id="professorClassStatus" class="report-status"></p>
@@ -362,9 +358,22 @@
         <section class="panel">
           <div class="panel-title-row">
             <h2>Lista da chamada</h2>
+            <span id="attendanceProgressBadge" class="badge">0 de 0</span>
           </div>
 
+          <p id="attendanceUnlockHint" class="report-status muted">Preencha data, turma, monitor e instrutor para liberar a chamada.</p>
+          <p id="attendanceActionStatus" class="report-status hidden"></p>
           <div id="professorBoard" class="nucleus-board"></div>
+
+          <div class="attendance-final-bar">
+            <div class="attendance-final-copy">
+              <strong>Concluir lista de presenca</strong>
+              <span id="attendanceProgressText">Preencha todos os alunos para liberar o registro final.</span>
+            </div>
+            <button id="attendanceRegisterBtn" type="button" class="primary" disabled>Registrar chamada</button>
+          </div>
+
+          <p id="attendanceFinalStatus" class="report-status hidden"></p>
         </section>
       </section>
 
@@ -970,6 +979,43 @@
           </div>
 
           <p id="adminReportStatus" class="report-status"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Registro de sem aula</h2>
+            <span id="noClassCountBadge" class="badge">0 registros</span>
+          </div>
+
+          <p class="muted">Admin e gestao podem registrar quando uma turma nao teve aula, informando data, nucleo, horario e justificativa.</p>
+
+          <div class="grid-form two">
+            <label>Data <span class="required-mark">*</span>
+              <input id="noClassDate" type="date" />
+            </label>
+
+            <label>Nucleo <span class="required-mark">*</span>
+              <select id="noClassNucleus"></select>
+            </label>
+
+            <label>Turma / Horario <span class="required-mark">*</span>
+              <select id="noClassSchedule">
+                <option value="">Selecione a turma / horario</option>
+              </select>
+              <span id="noClassScheduleHint" class="field-help muted"></span>
+            </label>
+
+            <label>Motivo / justificativa <span class="required-mark">*</span>
+              <input id="noClassReason" type="text" placeholder="Ex.: feriado, evento no nucleo, ausencia do professor" />
+            </label>
+          </div>
+
+          <div class="toolbar">
+            <button id="noClassSaveBtn" type="button" class="primary">Salvar registro de sem aula</button>
+          </div>
+
+          <p id="noClassStatus" class="report-status"></p>
+          <div id="noClassList" class="history-stack"></div>
         </section>
 
         <section class="panel">
@@ -1641,7 +1687,6 @@
         <button type="button" class="btn-present">P</button>
         <button type="button" class="btn-absent">F</button>
         <button type="button" class="btn-justified">J</button>
-        <button type="button" class="btn-sa">S/A</button>
       </div>
     </article>
   </template>
