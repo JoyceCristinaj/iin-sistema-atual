@@ -2343,3 +2343,165 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
 .acompanhamento-detail p {
   margin: 0;
 }
+
+.annual-snack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.annual-snack-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.annual-snack-table th,
+.annual-snack-table td {
+  text-align: left;
+}
+
+.supervisao-topo {
+  gap: 16px;
+}
+
+.supervisao-bloco {
+  display: grid;
+  gap: 16px;
+}
+
+.supervisao-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #d6dde8;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.supervisao-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.supervisao-table th,
+.supervisao-table td {
+  border-bottom: 1px solid #dbe4f0;
+  border-right: 1px solid #e6edf6;
+  padding: 12px 10px;
+  vertical-align: middle;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.supervisao-table th:last-child,
+.supervisao-table td:last-child {
+  border-right: none;
+}
+
+.supervisao-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef4fb;
+  color: #17324f;
+  font-weight: 800;
+}
+
+.supervisao-table tbody tr:nth-child(even) td {
+  background: #fbfdff;
+}
+
+.supervisao-status-select,
+.supervisao-nota-select {
+  width: 100%;
+  min-width: 82px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #b8c7db;
+  background: #fff;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #10233a;
+}
+
+.supervisao-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.supervisao-observacoes {
+  display: grid;
+  gap: 8px;
+}
+
+.supervisao-observacoes textarea {
+  min-height: 140px;
+}
+
+.supervisao-subtitle {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  color: #0f2745;
+}
+
+#supervisaoMensalPanel:not(.is-open) .panel-collapse-sub {
+  color: #b45309;
+}
+
+@media (max-width: 768px) {
+  .supervisao-topo,
+  #tab-supervisao .grid-form.four {
+    grid-template-columns: 1fr;
+  }
+
+  .supervisao-table-wrap {
+    border-radius: 16px;
+  }
+
+  .supervisao-table {
+    min-width: 720px;
+    font-size: 0.92rem;
+  }
+
+  .supervisao-table th,
+  .supervisao-table td {
+    padding: 12px 8px;
+  }
+
+  .supervisao-status-select,
+  .supervisao-nota-select {
+    min-width: 94px;
+    min-height: 46px;
+    font-size: 1rem;
+  }
+
+  .supervisao-legenda {
+    font-size: 0.9rem;
+  }
+
+  .annual-snack-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .annual-snack-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .annual-snack-value {
+    font-size: 1.7rem;
+  }
+
+  .supervisao-table {
+    min-width: 680px;
+  }
+}

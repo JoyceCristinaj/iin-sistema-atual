@@ -344,6 +344,107 @@ function normalizeEadWatchRecord(record) {
     source: record?.source || "ead_manual",
   };
 }
+function normalizeSupervisaoRecord(record, forcedType = "", fallbackProjectKey = state.currentProjectKey) {
+  const type = forcedType || record?.type || "supervisao_diario";
+  const normalizedType = type === "supervisao_mensal" ? "supervisao_mensal" : "supervisao_diario";
+  const inferredProject =
+    normalizeProjectKey(record?.project) ||
+    inferProjectKeyFromNucleus(record?.nucleo || record?.nucleus) ||
+    fallbackProjectKey ||
+    state.currentProjectKey;
+
+  return {
+    id: record?.id || crypto.randomUUID(),
+    type: normalizedType,
+    project: inferredProject,
+    createdAt: record?.createdAt || new Date().toISOString(),
+    updatedAt: record?.updatedAt || record?.createdAt || "",
+    nucleo: normalizeNucleusName(record?.nucleo || record?.nucleus || ""),
+    modalidade: String(record?.modalidade || "").trim(),
+    instrutor: String(record?.instrutor || "").trim(),
+
+    data: String(record?.data || "").trim(),
+    checklistDiario: record?.checklistDiario && typeof record.checklistDiario === "object"
+      ? { ...record.checklistDiario }
+      : {},
+    observacoesGerais: String(record?.observacoesGerais || "").trim(),
+    avaliacaoGeral: String(record?.avaliacaoGeral || "").trim(),
+    supervisor: String(record?.supervisor || "").trim(),
+    supervisorCpf: String(record?.supervisorCpf || "").trim(),
+    instrutorCpf: String(record?.instrutorCpf || "").trim(),
+
+    mes: String(record?.mes || "").trim(),
+    dia: String(record?.dia || "").trim(),
+    metodologiaInstrutores: record?.metodologiaInstrutores && typeof record.metodologiaInstrutores === "object"
+      ? { ...record.metodologiaInstrutores }
+      : {},
+    metodologiaTurmas: record?.metodologiaTurmas && typeof record.metodologiaTurmas === "object"
+      ? { ...record.metodologiaTurmas }
+      : {},
+    supervisorMensal: String(record?.supervisorMensal || "").trim(),
+    gerenteGeral: String(record?.gerenteGeral || "").trim(),
+    finalizacao: String(record?.finalizacao || "").trim(),
+    supervisorMensalCpf: String(record?.supervisorMensalCpf || "").trim(),
+    gerenteCpf: String(record?.gerenteCpf || "").trim(),
+    status: record?.status === "concluido" ? "concluido" : "rascunho",
+    concludedAt: record?.concludedAt || (record?.status === "concluido" ? (record?.updatedAt || record?.createdAt || new Date().toISOString()) : ""),
+  };
+}
+function expandLegacySupervisaoRecord(record, projectKey = state.currentProjectKey) {
+  if (!record || typeof record !== "object") return [];
+
+  if (record.type === "supervisao_diario" || record.type === "supervisao_mensal") {
+    return [normalizeSupervisaoRecord(record, record.type, projectKey)];
+  }
+
+  const baseId = record?.id || crypto.randomUUID();
+  const hasDaily =
+    !!record?.data ||
+    !!record?.observacoesGerais ||
+    !!record?.avaliacaoGeral ||
+    !!record?.supervisor ||
+    !!record?.instrutor ||
+    Object.values(record?.checklistDiario || {}).some(Boolean);
+  const hasMonthly =
+    !!record?.mes ||
+    !!record?.dia ||
+    !!record?.supervisorMensal ||
+    !!record?.gerenteGeral ||
+    !!record?.finalizacao ||
+    Object.values(record?.metodologiaInstrutores || {}).some(Boolean) ||
+    Object.values(record?.metodologiaTurmas || {}).some(Boolean);
+
+  const expanded = [];
+  if (hasDaily) {
+    expanded.push(
+      normalizeSupervisaoRecord(
+        { ...record, id: `${baseId}-diario`, type: "supervisao_diario" },
+        "supervisao_diario",
+        projectKey
+      )
+    );
+  }
+  if (hasMonthly) {
+    expanded.push(
+      normalizeSupervisaoRecord(
+        { ...record, id: `${baseId}-mensal`, type: "supervisao_mensal" },
+        "supervisao_mensal",
+        projectKey
+      )
+    );
+  }
+
+  return expanded.length
+    ? expanded
+    : [normalizeSupervisaoRecord({ ...record, id: `${baseId}-diario` }, "supervisao_diario", projectKey)];
+}
+function normalizeSupervisaoBag(items, projectKey = state.currentProjectKey) {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .flatMap((record) => expandLegacySupervisaoRecord(record, projectKey))
+    .sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")));
+}
 
 function createDefaultUsersForProject(projectKey) {
   const base = [
@@ -463,7 +564,12 @@ function loadData() {
     state.nucleusLogsByProject = parsed.nucleusLogsByProject || {};
     state.mestreDocsByProject = parsed.mestreDocsByProject || createMestreDocsByProject();
     state.settingsByProject = parsed.settingsByProject || createSettingsByProject();
-    state.supervisaoByProject = parsed.supervisaoByProject || {};
+    state.supervisaoByProject = Object.fromEntries(
+      Object.entries(parsed.supervisaoByProject || {}).map(([projectKey, items]) => [
+        projectKey,
+        normalizeSupervisaoBag(items, projectKey),
+      ])
+    );
     state.snackStockByProject = parsed.snackStockByProject || createSnackStockByProject();
 
     PROJECTS.forEach((project) => {
@@ -480,6 +586,9 @@ function loadData() {
 
       if (!state.eadWatchByProject[project.key]) {
         state.eadWatchByProject[project.key] = [];
+      }
+      if (!state.supervisaoByProject[project.key]) {
+        state.supervisaoByProject[project.key] = [];
       }
 
       getVisibleNuclei(project.key).forEach((nucleus) => {
@@ -694,6 +803,7 @@ function getSupervisaoBag(projectKey = state.currentProjectKey) {
   if (!state.supervisaoByProject[projectKey]) {
     state.supervisaoByProject[projectKey] = [];
   }
+  state.supervisaoByProject[projectKey] = normalizeSupervisaoBag(state.supervisaoByProject[projectKey], projectKey);
   return state.supervisaoByProject[projectKey];
 }
 

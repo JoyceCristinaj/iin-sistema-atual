@@ -983,6 +983,30 @@
 
           <div id="attendanceReportBoard" class="cards-grid"></div>
         </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Relatório Anual de Lanches</h2>
+            <span class="badge">Admin / Gestão</span>
+          </div>
+
+          <div class="grid-form three">
+            <label>Ano
+              <select id="annualSnackYear"></select>
+            </label>
+
+            <div class="toolbar compact align-end">
+              <button id="annualSnackRefreshBtn" type="button" class="ghost">Atualizar</button>
+            </div>
+
+            <div class="toolbar compact align-end">
+              <button id="annualSnackPrintBtn" type="button" class="primary">Imprimir relatório</button>
+            </div>
+          </div>
+
+          <p id="annualSnackStatus" class="report-status muted"></p>
+          <div id="annualSnackBoard" class="history-stack"></div>
+        </section>
       </section>
 
       <!-- ACOMPANHAMENTO -->
@@ -1005,7 +1029,8 @@
                 <option value="observacao_interna">Observação interna</option>
                 <option value="atestado_colaborador">Atestado do colaborador</option>
                 <option value="ead_tempo">Tempo de aula EAD</option>
-                <option value="supervisao_checklist">Checklist de metodologia</option>
+                <option value="supervisao_diario">Checklist diário</option>
+                <option value="supervisao_mensal">Checklist mensal / metodologia</option>
               </select>
             </label>
 
@@ -1423,13 +1448,32 @@
               <input id="supervisaoInstrutorCpf" type="text" placeholder="CPF do instrutor" />
             </label>
           </div>
+
+          <div class="toolbar" style="margin-top:16px;">
+            <button type="button" class="primary" id="salvarSupervisaoDiarioBtn">Salvar checklist diário</button>
+            <span id="supervisaoDiarioStatus" class="report-status"></span>
+          </div>
         </section>
 
-        <section class="panel supervisao-bloco">
-          <div class="panel-title-row">
-            <h2>Acompanhamento de Metodologia</h2>
-            <span class="badge">Mensal</span>
-          </div>
+        <section class="panel supervisao-bloco collapsible-panel" id="supervisaoMensalPanel">
+          <button type="button" class="panel-collapse-toggle" id="supervisaoMensalToggle" aria-expanded="false" aria-controls="supervisaoMensalContent">
+            <div class="panel-collapse-head">
+              <h2>Checklist Mensal de Metodologia</h2>
+              <span class="panel-collapse-sub">Preencher ao final do mês</span>
+            </div>
+
+            <span class="panel-collapse-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </button>
+
+          <div id="supervisaoMensalContent" class="panel-collapse-content">
+            <div class="toolbar">
+              <span id="supervisaoMensalStatusText" class="badge">Em andamento</span>
+              <span id="supervisaoMensalConcluidoEm" class="muted"></span>
+            </div>
 
           <div class="grid-form four">
             <label>Mês
@@ -1446,6 +1490,13 @@
 
             <label>Gerente Geral
               <input id="supervisaoGerenteGeral" type="text" placeholder="Nome do gerente geral" />
+            </label>
+
+            <label>Status do mensal
+              <select id="supervisaoMensalStatus">
+                <option value="rascunho">Em andamento / rascunho</option>
+                <option value="concluido">Concluído</option>
+              </select>
             </label>
           </div>
 
@@ -1509,7 +1560,9 @@
           </div>
 
           <div class="toolbar" style="margin-top:16px;">
-            <button type="button" class="primary" id="salvarSupervisaoBtn">Salvar checklist</button>
+            <button type="button" class="ghost" id="salvarSupervisaoMensalRascunhoBtn">Salvar rascunho mensal</button>
+            <button type="button" class="primary" id="concluirSupervisaoMensalBtn">Concluir checklist mensal</button>
+          </div>
           </div>
         </section>
       </section>

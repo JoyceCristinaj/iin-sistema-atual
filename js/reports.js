@@ -688,7 +688,20 @@ function supportRecordTypeLabel(type) {
   if (type === "imagem_responsavel") return "Foto / imagem enviada pelo responsável";
   if (type === "ead_tempo") return "Tempo de aula EAD";
   if (type === "supervisao_checklist") return "Checklist de metodologia";
+  if (type === "supervisao_diario") return "Checklist diario";
+  if (type === "supervisao_mensal") return "Checklist mensal / metodologia";
   return "Observação interna";
+}
+
+function acompanhamentoStatusLabel(status) {
+  if (status === "concluido") return "Concluido";
+  if (status === "rascunho") return "Em andamento / rascunho";
+  return "Registrado";
+}
+
+function formatTimestampLabel(value) {
+  const date = new Date(value || "");
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("pt-BR");
 }
 
 function setTeacherSupportStatus(message, isError = false) {
@@ -1048,6 +1061,7 @@ function buildAcompanhamentoEntries() {
     registeredBy: record.createdBy || "-",
     createdAt: record.createdAt || "",
     referenceDate: record.classDate || String(record.createdAt || "").slice(0, 10),
+    status: "registrado",
     title: supportRecordTypeLabel(record.type),
     summary: record.text || record.attachment?.name || "Registro operacional",
     details: [
@@ -1070,6 +1084,7 @@ function buildAcompanhamentoEntries() {
     registeredBy: record.createdBy || "-",
     createdAt: record.createdAt || "",
     referenceDate: record.watchDate || String(record.createdAt || "").slice(0, 10),
+    status: "registrado",
     title: "Tempo de aula EAD",
     summary: `${Number(record.minutes || 0)} min${record.category ? ` • ${record.category}` : ""}`,
     details: [
@@ -1082,23 +1097,33 @@ function buildAcompanhamentoEntries() {
   const supervisaoEntries = getSupervisaoBag().map((record) => ({
     id: `supervisao-${record.id}`,
     rawId: record.id,
-    type: "supervisao_checklist",
-    origin: "Checklist de supervisão",
+    type: record.type || "supervisao_diario",
+    origin: record.type === "supervisao_mensal" ? "Checklist mensal de metodologia" : "Checklist diario de metodologia",
     project: record.project || state.currentProjectKey,
     nucleus: record.nucleo || "-",
     studentName: "",
-    collaboratorName: record.instrutor || record.supervisor || record.supervisorMensal || "-",
-    registeredBy: record.supervisor || record.supervisorMensal || "Supervisão",
-    createdAt: record.createdAt || "",
-    referenceDate: record.data || record.dia || String(record.createdAt || "").slice(0, 10),
-    title: "Checklist de metodologia",
-    summary: `${record.modalidade || "-"} • Diário ${countFilledChecklistItems(record.checklistDiario)} itens • Mensal ${countFilledChecklistItems(record.metodologiaInstrutores) + countFilledChecklistItems(record.metodologiaTurmas)} itens`,
+    collaboratorName: record.type === "supervisao_mensal"
+      ? (record.supervisorMensal || record.gerenteGeral || record.instrutor || "-")
+      : (record.instrutor || "-"),
+    registeredBy: record.type === "supervisao_mensal"
+      ? (record.supervisorMensal || "Supervisao")
+      : (record.supervisor || "Supervisao"),
+    createdAt: record.updatedAt || record.createdAt || "",
+    referenceDate: record.type === "supervisao_mensal"
+      ? (record.dia || (record.mes ? `${record.mes}-01` : String(record.createdAt || "").slice(0, 10)))
+      : (record.data || String(record.createdAt || "").slice(0, 10)),
+    status: record.type === "supervisao_mensal" ? (record.status || "rascunho") : "registrado",
+    title: supportRecordTypeLabel(record.type || "supervisao_diario"),
+    summary: record.type === "supervisao_mensal"
+      ? `${record.modalidade || "-"} • ${countFilledChecklistItems(record.metodologiaInstrutores) + countFilledChecklistItems(record.metodologiaTurmas)} itens de metodologia`
+      : `${record.modalidade || "-"} • ${countFilledChecklistItems(record.checklistDiario)} itens diarios`,
     details: [
-      record.data ? `Data diária: ${formatDateLabel(record.data)}` : "",
+      record.data ? `Data diaria: ${formatDateLabel(record.data)}` : "",
       record.dia ? `Data mensal: ${formatDateLabel(record.dia)}` : "",
-      record.mes ? `Mês de referência: ${record.mes}` : "",
+      record.mes ? `Mes de referencia: ${record.mes}` : "",
       record.observacoesGerais || "",
-      record.avaliacaoGeral ? `Avaliação geral: ${record.avaliacaoGeral}` : "",
+      record.avaliacaoGeral ? `Avaliacao geral: ${record.avaliacaoGeral}` : "",
+      record.concludedAt ? `Concluido em: ${formatTimestampLabel(record.concludedAt)}` : "",
     ].filter(Boolean),
     attachment: null,
   }));
@@ -1198,9 +1223,9 @@ function renderAcompanhamentoTab() {
           <strong>${escapeHtml(entry.title)}</strong>
           <span class="badge">${escapeHtml(entry.origin)}</span>
         </div>
-        <div class="muted">${escapeHtml(new Date(entry.createdAt || "").toLocaleString("pt-BR"))}</div>
+        <div class="muted">${escapeHtml(formatTimestampLabel(entry.createdAt))}</div>
       </div>
-      <div class="muted">${escapeHtml(`Projeto: ${entry.project || "-"} • Núcleo: ${entry.nucleus || "-"} • Aluno: ${entry.studentName || "-"} • Colaborador: ${entry.collaboratorName || "-"} • Registrado por: ${entry.registeredBy || "-"}`)}</div>
+      <div class="muted">${escapeHtml(`Projeto: ${entry.project || "-"} • Nucleo: ${entry.nucleus || "-"} • Aluno: ${entry.studentName || "-"} • Colaborador: ${entry.collaboratorName || "-"} • Registrado por: ${entry.registeredBy || "-"} • Status: ${acompanhamentoStatusLabel(entry.status)}`)}</div>
       <div>${escapeHtml(entry.summary || "-")}</div>
       ${entry.details.length ? `<div class="acompanhamento-detail">${entry.details.map((detail) => `<p>${escapeHtml(detail)}</p>`).join("")}</div>` : ""}
     `;
@@ -1285,13 +1310,15 @@ function printAcompanhamentoReport() {
 
   const rows = entries.map((entry) => `
     <tr>
-      <td>${escapeHtml(new Date(entry.createdAt || "").toLocaleString("pt-BR"))}</td>
+      <td>${escapeHtml(formatTimestampLabel(entry.createdAt))}</td>
       <td>${escapeHtml(supportRecordTypeLabel(entry.type))}</td>
+      <td>${escapeHtml(acompanhamentoStatusLabel(entry.status))}</td>
       <td>${escapeHtml(entry.nucleus || "-")}</td>
       <td>${escapeHtml(entry.studentName || "-")}</td>
       <td>${escapeHtml(entry.collaboratorName || "-")}</td>
       <td>${escapeHtml(entry.origin || "-")}</td>
       <td>${escapeHtml(entry.registeredBy || "-")}</td>
+      <td>${escapeHtml(entry.referenceDate ? formatDateLabel(entry.referenceDate) : "-")}</td>
       <td>${escapeHtml(entry.summary || "-")}</td>
     </tr>
   `).join("");
@@ -1323,11 +1350,13 @@ function printAcompanhamentoReport() {
             <tr>
               <th>Data/Hora</th>
               <th>Tipo</th>
+              <th>Status</th>
               <th>Núcleo</th>
               <th>Aluno</th>
               <th>Colaborador</th>
               <th>Origem</th>
               <th>Registrado por</th>
+              <th>Data ref.</th>
               <th>Resumo</th>
             </tr>
           </thead>

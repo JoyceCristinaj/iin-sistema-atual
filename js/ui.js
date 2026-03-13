@@ -194,6 +194,11 @@ tabPages: [
 
   adminLogNucleusFilter: el("adminLogNucleusFilter"),
   adminOpenLogModal: el("adminOpenLogModal"),
+  annualSnackYear: el("annualSnackYear"),
+  annualSnackRefreshBtn: el("annualSnackRefreshBtn"),
+  annualSnackPrintBtn: el("annualSnackPrintBtn"),
+  annualSnackStatus: el("annualSnackStatus"),
+  annualSnackBoard: el("annualSnackBoard"),
 
   acompanhamentoTypeFilter: el("acompanhamentoTypeFilter"),
   acompanhamentoNucleusFilter: el("acompanhamentoNucleusFilter"),
@@ -213,6 +218,18 @@ tabPages: [
   eadWatchCategory: el("eadWatchCategory"),
   eadWatchNotes: el("eadWatchNotes"),
   eadWatchStatus: el("eadWatchStatus"),
+
+  supervisaoData: el("supervisaoData"),
+  supervisaoNucleo: el("supervisaoNucleo"),
+  supervisaoModalidade: el("supervisaoModalidade"),
+  supervisaoMes: el("supervisaoMes"),
+  salvarSupervisaoDiarioBtn: el("salvarSupervisaoDiarioBtn"),
+  salvarSupervisaoMensalRascunhoBtn: el("salvarSupervisaoMensalRascunhoBtn"),
+  concluirSupervisaoMensalBtn: el("concluirSupervisaoMensalBtn"),
+  supervisaoDiarioStatus: el("supervisaoDiarioStatus"),
+  supervisaoMensalStatusText: el("supervisaoMensalStatusText"),
+  supervisaoMensalStatus: el("supervisaoMensalStatus"),
+  supervisaoMensalConcluidoEm: el("supervisaoMensalConcluidoEm"),
 
   // modais
   logModal: el("logModal"),
@@ -627,7 +644,8 @@ function bindCollapsiblePanels() {
   const pairs = [
     { toggleId: "adminMestreToggle", panelId: "adminMestrePanel" },
     { toggleId: "usersPanelToggle", panelId: "usersPanel" },
-    { toggleId: "scheduleConfigToggle", panelId: "scheduleConfigPanel" }
+    { toggleId: "scheduleConfigToggle", panelId: "scheduleConfigPanel" },
+    { toggleId: "supervisaoMensalToggle", panelId: "supervisaoMensalPanel" }
   ];
 
   pairs.forEach(({ toggleId, panelId }) => {

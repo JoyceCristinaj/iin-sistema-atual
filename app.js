@@ -406,6 +406,18 @@ ui.snackTodayBtn?.addEventListener("click", () => {
   ui.acompanhamentoPrintBtn?.addEventListener("click", printAcompanhamentoReport);
   ui.eadWatchForm?.addEventListener("submit", onSaveEadWatchRecord);
   ui.eadWatchCollaborator?.addEventListener("change", syncEadWatchCollaborator);
+  ui.annualSnackYear?.addEventListener("change", () => renderAnnualSnackReport?.());
+  ui.annualSnackRefreshBtn?.addEventListener("click", () => renderAnnualSnackReport?.());
+  ui.annualSnackPrintBtn?.addEventListener("click", printAnnualSnackReport);
+  [
+    ui.supervisaoData,
+    ui.supervisaoNucleo,
+    ui.supervisaoModalidade,
+    ui.supervisaoMes,
+  ].forEach((node) => node?.addEventListener("change", () => renderSupervisaoTab?.()));
+  ui.salvarSupervisaoDiarioBtn?.addEventListener("click", salvarChecklistSupervisaoDiario);
+  ui.salvarSupervisaoMensalRascunhoBtn?.addEventListener("click", salvarChecklistSupervisaoMensalRascunho);
+  ui.concluirSupervisaoMensalBtn?.addEventListener("click", concluirChecklistSupervisaoMensal);
 
   // Modais
   ui.logModalClose?.addEventListener("click", closeLogModal);
@@ -575,6 +587,10 @@ function render() {
   btn.classList.toggle("hidden", !canAccessStock);
 }
 
+  if (tab === "tab-dashboard") {
+    btn.classList.toggle("hidden", user.role === "professor");
+  }
+
   // Admin só admin
   if (tab === "tab-admin") {
     btn.classList.toggle("hidden", user.role !== "admin");
@@ -618,7 +634,7 @@ function render() {
   }
 });
 
-  if (user.role === "professor" && !["tab-dashboard", "tab-chamada", "tab-professor", "tab-mestre", "tab-aulas"].includes(state.activeTab)) {
+  if (user.role === "professor" && !["tab-chamada", "tab-professor", "tab-mestre", "tab-aulas"].includes(state.activeTab)) {
   state.activeTab = "tab-chamada";
 }
 
@@ -660,6 +676,8 @@ hydrateWhatsStudents();
 renderDashboardChart();
 renderDashboardMiniChart();
 renderAcompanhamentoTab?.();
+renderAnnualSnackReport?.();
+renderSupervisaoTab?.();
 
 if (state.activeTab === "tab-admin") {
   ensureAdminExtraPanels();
