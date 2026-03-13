@@ -373,51 +373,232 @@ function onAddStudent(event) {
 }
 
 /* ========= CALENDAR ========= */
-function getSchedulesFromForm() {
-  const slots = [];
-  for (let i = 0; i < 6; i++) {
-    const start = ui.calendarStartTimes[i]?.value || "";
-    const end = ui.calendarEndTimes[i]?.value || "";
-    if (start && end) slots.push({ start, end });
-  }
-  return slots;
-}
 function formatSchedules(schedules = []) {
   if (!Array.isArray(schedules) || !schedules.length) return "não definidos";
-  return schedules.map((s, i) => `${i + 1}) ${s.start} às ${s.end}`).join(" • ");
+  return schedules.map((s, i) => typeof s === "string" ? `${i + 1}) ${s}` : `${i + 1}) ${s.start} às ${s.end}`).join(" • ");
 }
-function onSaveClassCalendar(event) {
-  event.preventDefault();
+function setScheduleConfigStatus(message, isError = false) {
+  if (!ui.scheduleConfigStatus) return;
+  ui.scheduleConfigStatus.textContent = message || "";
+  ui.scheduleConfigStatus.style.color = isError ? "#b31d2f" : "";
+}
+function getSelectedScheduleConfigNucleus() {
+  return ui.scheduleConfigNucleus?.value || getVisibleNuclei()[0] || "";
+}
+function scheduleListToTextarea(items = []) {
+  return (items || []).join("\n");
+}
+function parseScheduleListText(text) {
+  const invalid = [];
+  const values = normalizeScheduleStrings(
+    String(text || "")
+      .split(/\r?\n/)
+      .map((line) => String(line || "").trim())
+      .filter(Boolean)
+      .map((line) => {
+        const parsed = parseScheduleRangeText(line);
+        if (!parsed?.start || !parsed?.end) {
+          invalid.push(line);
+          return "";
+        }
+        return `${parsed.start} às ${parsed.end}`;
+      })
+      .filter(Boolean)
+  );
+
+  return { values, invalid };
+}
+function syncCalendarScheduleSummary(nucleus) {
+  const calendar = getProjectCalendar();
+  const config = getNucleusScheduleConfig(nucleus);
+  if (!calendar[nucleus]) calendar[nucleus] = { days: [], schedules: [] };
+
+  const summary = uniqueScheduleValues(
+    Object.values(config.standardByWeekday || {}).flatMap((items) => Array.isArray(items) ? items : [])
+  );
+
+  calendar[nucleus].schedules = summary
+    .map((schedule) => parseScheduleRangeText(schedule))
+    .filter((slot) => slot?.start && slot?.end);
+}
+function renderScheduleConfigEditor(nucleus = getSelectedScheduleConfigNucleus()) {
+  if (!nucleus) return;
+
+  const config = getNucleusScheduleConfig(nucleus);
+  if (ui.scheduleConfigNucleus) ui.scheduleConfigNucleus.value = nucleus;
+
+  SCHEDULE_WEEKDAYS.forEach((weekday) => {
+    const field = ui.scheduleDayInputs?.[weekday];
+    if (!field) return;
+    field.value = scheduleListToTextarea(config.standardByWeekday?.[weekday] || []);
+  });
+
+  syncScheduleExceptionEditor();
+}
+function syncScheduleExceptionEditor() {
+  const nucleus = getSelectedScheduleConfigNucleus();
+  if (!nucleus) return;
+
+  const config = getNucleusScheduleConfig(nucleus);
+  const pickedDate = ui.scheduleExceptionDate?.value || ui.scheduleDayDate?.value || "";
+
+  if (ui.scheduleExceptionDate && ui.scheduleExceptionDate.value !== pickedDate) {
+    ui.scheduleExceptionDate.value = pickedDate;
+  }
+
+  if (ui.scheduleExceptionText) {
+    ui.scheduleExceptionText.value = scheduleListToTextarea(config.exceptionsByDate?.[pickedDate] || []);
+  }
+}
+function onScheduleConfigNucleusChange() {
+  renderScheduleConfigEditor();
+  setScheduleConfigStatus("");
+}
+function onResetScheduleDefaults() {
   const user = currentUser();
   if (!user || (user.role !== "gestao" && user.role !== "admin")) return;
 
-  const nucleus = el("calendarNucleus")?.value || "";
-  if (!getVisibleNuclei().includes(nucleus)) return;
+  const nucleus = getSelectedScheduleConfigNucleus();
+  if (!nucleus) return;
 
-  const date = el("calendarDate")?.value || "";
-  const schedules = getSchedulesFromForm();
-  const calendar = getProjectCalendar();
-  const nuc = calendar[nucleus] || { days: [], schedules: [] };
-  calendar[nucleus] = nuc;
+  const legacySchedules = getProjectCalendar()?.[nucleus]?.schedules || [];
+  getProjectScheduleConfigs()[nucleus] = normalizeScheduleConfig(null, nucleus, legacySchedules);
+  getProjectScheduleConfigs()[nucleus].updatedAt = new Date().toISOString();
+  getProjectScheduleConfigs()[nucleus].updatedBy = user.username;
 
-  let changed = false;
-  if (date && !nuc.days.includes(date)) {
-    nuc.days.push(date);
-    nuc.days.sort((a, b) => b.localeCompare(a));
-    changed = true;
-  }
-  if (schedules.length) {
-    nuc.schedules = schedules;
-    changed = true;
-  }
-  if (!changed) return;
-
-  pushNucleusLog(nucleus, "Calendário", `Aulas/horários atualizados`, user);
-
+  syncCalendarScheduleSummary(nucleus);
   persist();
-  ui.classCalendarForm.reset();
+  renderScheduleConfigEditor(nucleus);
   renderClassDays();
   hydrateStudentScheduleOptions();
+  setScheduleConfigStatus("Horários padrão recarregados a partir da base do núcleo.");
+}
+function onSaveStandardScheduleConfig() {
+  const user = currentUser();
+  if (!user || (user.role !== "gestao" && user.role !== "admin")) return;
+
+  const nucleus = getSelectedScheduleConfigNucleus();
+  if (!getVisibleNuclei().includes(nucleus)) return;
+
+  const config = getNucleusScheduleConfig(nucleus);
+  const invalidByDay = [];
+
+  SCHEDULE_WEEKDAYS.forEach((weekday) => {
+    const field = ui.scheduleDayInputs?.[weekday];
+    const parsed = parseScheduleListText(field?.value || "");
+    if (parsed.invalid.length) {
+      invalidByDay.push(`${weekday}: ${parsed.invalid.join(", ")}`);
+      return;
+    }
+    config.standardByWeekday[weekday] = parsed.values;
+  });
+
+  if (invalidByDay.length) {
+    setScheduleConfigStatus(`Corrija os horários inválidos antes de salvar. ${invalidByDay.join(" | ")}`, true);
+    return;
+  }
+
+  config.updatedAt = new Date().toISOString();
+  config.updatedBy = user.username;
+  syncCalendarScheduleSummary(nucleus);
+
+  pushNucleusLog(nucleus, "Configuração de horários", `Horários padrão atualizados`, user);
+
+  persist();
+  renderClassDays();
+  renderScheduleConfigEditor(nucleus);
+  hydrateStudentScheduleOptions();
+  setScheduleConfigStatus("Horários padrão salvos com sucesso.");
+}
+function onSaveScheduleException() {
+  const user = currentUser();
+  if (!user || (user.role !== "gestao" && user.role !== "admin")) return;
+
+  const nucleus = getSelectedScheduleConfigNucleus();
+  const date = ui.scheduleExceptionDate?.value || ui.scheduleDayDate?.value || "";
+  if (!nucleus || !date) {
+    setScheduleConfigStatus("Selecione o núcleo e a data da exceção.", true);
+    return;
+  }
+
+  const parsed = parseScheduleListText(ui.scheduleExceptionText?.value || "");
+  if (parsed.invalid.length) {
+    setScheduleConfigStatus(`Há horários inválidos na exceção: ${parsed.invalid.join(", ")}`, true);
+    return;
+  }
+  if (!parsed.values.length) {
+    setScheduleConfigStatus("Informe pelo menos um horário para salvar a exceção.", true);
+    return;
+  }
+
+  const config = getNucleusScheduleConfig(nucleus);
+  config.exceptionsByDate[date] = parsed.values;
+  config.updatedAt = new Date().toISOString();
+  config.updatedBy = user.username;
+
+  const calendar = getProjectCalendar();
+  if (!calendar[nucleus]) calendar[nucleus] = { days: [], schedules: [] };
+  if (!calendar[nucleus].days.includes(date)) {
+    calendar[nucleus].days.push(date);
+    calendar[nucleus].days.sort((a, b) => b.localeCompare(a));
+  }
+
+  pushNucleusLog(nucleus, "Configuração de horários", `Exceção salva para ${formatDateLabel(date)}`, user);
+  persist();
+  renderClassDays();
+  syncScheduleExceptionEditor();
+  setScheduleConfigStatus("Exceção por data salva com sucesso.");
+}
+function onRemoveScheduleException() {
+  const user = currentUser();
+  if (!user || (user.role !== "gestao" && user.role !== "admin")) return;
+
+  const nucleus = getSelectedScheduleConfigNucleus();
+  const date = ui.scheduleExceptionDate?.value || "";
+  if (!nucleus || !date) {
+    setScheduleConfigStatus("Selecione a data da exceção que deseja remover.", true);
+    return;
+  }
+
+  const config = getNucleusScheduleConfig(nucleus);
+  if (!config.exceptionsByDate?.[date]) {
+    setScheduleConfigStatus("Não existe exceção salva nessa data.", true);
+    return;
+  }
+
+  delete config.exceptionsByDate[date];
+  config.updatedAt = new Date().toISOString();
+  config.updatedBy = user.username;
+
+  pushNucleusLog(nucleus, "Configuração de horários", `Exceção removida de ${formatDateLabel(date)}`, user);
+  persist();
+  renderClassDays();
+  syncScheduleExceptionEditor();
+  setScheduleConfigStatus("Exceção removida com sucesso.");
+}
+function onRegisterScheduleDay() {
+  const user = currentUser();
+  if (!user || (user.role !== "gestao" && user.role !== "admin")) return;
+
+  const nucleus = getSelectedScheduleConfigNucleus();
+  const date = ui.scheduleDayDate?.value || "";
+  if (!nucleus || !date) {
+    setScheduleConfigStatus("Selecione núcleo e data para registrar a aula.", true);
+    return;
+  }
+
+  const calendar = getProjectCalendar();
+  if (!calendar[nucleus]) calendar[nucleus] = { days: [], schedules: [] };
+  if (!calendar[nucleus].days.includes(date)) {
+    calendar[nucleus].days.push(date);
+    calendar[nucleus].days.sort((a, b) => b.localeCompare(a));
+  }
+
+  pushNucleusLog(nucleus, "Calendário", `Data de aula registrada: ${formatDateLabel(date)}`, user);
+  persist();
+  renderClassDays();
+  syncScheduleExceptionEditor();
+  setScheduleConfigStatus("Data de aula registrada com sucesso.");
 }
 
 function hydrateGestaoAlunoFiltroNucleo() {

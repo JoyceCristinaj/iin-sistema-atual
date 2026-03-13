@@ -26,6 +26,8 @@ function init() {
   renderSupervisaoTables();
 
   enhanceFormsAndTheme();
+  setupProfessorTabs?.();
+  document.getElementById("adminSupportPanel")?.remove();
 
   bindEvents();
   bindCollapsiblePanels();
@@ -306,11 +308,12 @@ ui.snackTodayBtn?.addEventListener("click", () => {
     const user = currentUser();
     if (user?.role === "professor") {
       hydrateProfessorScheduleOptions(user.nucleus, ui.professorClassDate?.value || "", "");
+      syncTeacherSupportForm?.();
     }
   });
 
+  ui.teacherAbsType?.addEventListener("change", () => syncTeacherSupportForm?.());
   ui.teacherAbsSave?.addEventListener("click", onTeacherSaveAtestado);
-  ui.adminSupportTypeFilter?.addEventListener("change", renderAdminSupportRecords);
 
   // Momento do mestre (prof)
   ui.teacherMestreOpen?.addEventListener("click", onTeacherOpenMestrePDF);
@@ -326,10 +329,17 @@ ui.snackTodayBtn?.addEventListener("click", () => {
 
   // Gestão: aluno / calendário
   ui.studentForm?.addEventListener("submit", onAddStudent);
-  ui.classCalendarForm?.addEventListener("submit", onSaveClassCalendar);
   ui.gestaoAlunoBusca?.addEventListener("input", renderListaAlunosGestao);
   ui.gestaoAlunoFiltroNucleo?.addEventListener("change", renderListaAlunosGestao);
   ui.gestaoAlunoFiltroModalidade?.addEventListener("change", renderListaAlunosGestao);
+  ui.scheduleConfigNucleus?.addEventListener("change", onScheduleConfigNucleusChange);
+  ui.scheduleDayDate?.addEventListener("change", syncScheduleExceptionEditor);
+  ui.scheduleExceptionDate?.addEventListener("change", syncScheduleExceptionEditor);
+  ui.scheduleResetDefaultsBtn?.addEventListener("click", onResetScheduleDefaults);
+  ui.scheduleSaveStandardBtn?.addEventListener("click", onSaveStandardScheduleConfig);
+  ui.scheduleSaveExceptionBtn?.addEventListener("click", onSaveScheduleException);
+  ui.scheduleRemoveExceptionBtn?.addEventListener("click", onRemoveScheduleException);
+  ui.scheduleRegisterDayBtn?.addEventListener("click", onRegisterScheduleDay);
 
   // ✅ Relatórios: núcleo do topo controla a listagem
   ui.adminReportNucleusFilter?.addEventListener("change", () => {
@@ -383,6 +393,19 @@ ui.snackTodayBtn?.addEventListener("click", () => {
       nucleus === "todos" ? "Registros • Todos os núcleos" : `Registros • ${nucleus}`
     );
   });
+
+  [
+    ui.acompanhamentoTypeFilter,
+    ui.acompanhamentoNucleusFilter,
+    ui.acompanhamentoStudentFilter,
+    ui.acompanhamentoCollaboratorFilter,
+    ui.acompanhamentoDateStart,
+    ui.acompanhamentoDateEnd,
+  ].forEach((node) => node?.addEventListener("change", () => renderAcompanhamentoTab?.()));
+  ui.acompanhamentoClearBtn?.addEventListener("click", clearAcompanhamentoFilters);
+  ui.acompanhamentoPrintBtn?.addEventListener("click", printAcompanhamentoReport);
+  ui.eadWatchForm?.addEventListener("submit", onSaveEadWatchRecord);
+  ui.eadWatchCollaborator?.addEventListener("change", syncEadWatchCollaborator);
 
   // Modais
   ui.logModalClose?.addEventListener("click", closeLogModal);
@@ -567,6 +590,10 @@ function render() {
     btn.classList.toggle("hidden", user.role !== "professor");
   }
 
+  if (tab === "tab-mestre") {
+    btn.classList.toggle("hidden", user.role !== "professor");
+  }
+
   if (tab === "tab-chamada") {
     btn.classList.toggle("hidden", user.role !== "professor");
   }
@@ -574,6 +601,10 @@ function render() {
   // Relatórios: esconder do colaborador
   if (tab === "tab-relatorios") {
     btn.classList.toggle("hidden", user.role === "professor" || user.role === "supervisao");
+  }
+
+  if (tab === "tab-acompanhamento") {
+    btn.classList.toggle("hidden", !(user.role === "gestao" || user.role === "admin"));
   }
 
   // Fila de espera: só admin e gestão
@@ -587,11 +618,11 @@ function render() {
   }
 });
 
-  if (user.role === "professor" && !["tab-dashboard", "tab-chamada", "tab-professor", "tab-aulas"].includes(state.activeTab)) {
+  if (user.role === "professor" && !["tab-dashboard", "tab-chamada", "tab-professor", "tab-mestre", "tab-aulas"].includes(state.activeTab)) {
   state.activeTab = "tab-chamada";
 }
 
-if (user.role === "gestao" && !["tab-dashboard", "tab-gestao", "tab-estoque", "tab-relatorios", "tab-fila", "tab-aulas"].includes(state.activeTab)) {
+if (user.role === "gestao" && !["tab-dashboard", "tab-gestao", "tab-estoque", "tab-relatorios", "tab-acompanhamento", "tab-fila", "tab-aulas"].includes(state.activeTab)) {
   state.activeTab = "tab-dashboard";
 }
 
@@ -599,7 +630,7 @@ if (user.role === "supervisao" && !["tab-dashboard", "tab-supervisao"].includes(
   state.activeTab = "tab-supervisao";
 }
 
-if (user.role === "admin" && !["tab-dashboard", "tab-gestao", "tab-estoque", "tab-relatorios", "tab-admin", "tab-fila", "tab-aulas"].includes(state.activeTab)) {
+if (user.role === "admin" && !["tab-dashboard", "tab-gestao", "tab-estoque", "tab-relatorios", "tab-acompanhamento", "tab-admin", "tab-fila", "tab-aulas"].includes(state.activeTab)) {
   state.activeTab = "tab-dashboard";
 }
 
@@ -620,6 +651,7 @@ renderClassDays();
 renderAttendanceReport();
 hydrateGestaoAlunoFiltroNucleo();
 renderListaAlunosGestao();
+renderScheduleConfigEditor?.();
 renderUniformTable();
 renderStock();
 renderAlerts();
@@ -627,7 +659,7 @@ renderSnackStockTab();
 hydrateWhatsStudents();
 renderDashboardChart();
 renderDashboardMiniChart();
-renderAdminSupportRecords();
+renderAcompanhamentoTab?.();
 
 if (state.activeTab === "tab-admin") {
   ensureAdminExtraPanels();
@@ -677,7 +709,6 @@ function renderProfessorArea(user) {
 
   renderPlanningList(user.nucleus);
   renderProfessorHistory(user.nucleus);
-  renderTeacherSupportHistory(user.nucleus);
 
   // combo do registro do colaborador
   if (ui.teacherAbsStudent) {
@@ -698,5 +729,7 @@ function renderProfessorArea(user) {
         ui.teacherAbsStudent.appendChild(opt);
       });
   }
+
+  syncTeacherSupportForm?.();
 }
 

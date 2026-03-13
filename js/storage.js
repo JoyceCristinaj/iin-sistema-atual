@@ -6,9 +6,11 @@ const state = {
   users: [],
   history: [],
   collaboratorRecordsByProject: {},
+  eadWatchByProject: {},
   uniformStockByProject: {},
   snackStockByProject: {},
   classDaysByProject: {},
+  scheduleConfigsByProject: {},
   attendanceStaffByProject: {},
   planningByProject: {},
   classLocksByProject: {},
@@ -50,6 +52,138 @@ function createEmptyCalendarByNucleus(projectKey) {
 }
 function createProjectCalendars() {
   return Object.fromEntries(PROJECTS.map((p) => [p.key, createEmptyCalendarByNucleus(p.key)]));
+}
+function createEmptyWeekdayScheduleMap() {
+  return Object.fromEntries(SCHEDULE_WEEKDAYS.map((day) => [day, []]));
+}
+function parseScheduleRangeText(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(\d{2}:\d{2})\s*(?:às|as|a)\s*(\d{2}:\d{2})$/i);
+  if (match) {
+    return { start: match[1], end: match[2] };
+  }
+
+  const single = raw.match(/^(\d{2}:\d{2})$/);
+  if (single) {
+    return { start: single[1], end: addOneHourToTime(single[1]) || "" };
+  }
+
+  return null;
+}
+function normalizeScheduleStrings(values = []) {
+  return uniqueScheduleValues(
+    values
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+  );
+}
+function extractScheduleStrings(values = []) {
+  if (!Array.isArray(values)) return [];
+
+  return normalizeScheduleStrings(
+    values.map((value) => {
+      if (typeof value === "string") return value;
+      if (value && typeof value === "object" && value.start && value.end) {
+        return `${value.start} às ${value.end}`;
+      }
+      return "";
+    })
+  );
+}
+function normalizeCalendarEntry(entry = {}) {
+  const scheduleStrings = extractScheduleStrings(entry?.schedules || []);
+  return {
+    days: Array.isArray(entry?.days)
+      ? uniqueScheduleValues(entry.days.map((day) => String(day || "").trim()).filter(Boolean))
+      : [],
+    schedules: scheduleStrings
+      .map((schedule) => parseScheduleRangeText(schedule))
+      .filter((item) => item?.start && item?.end),
+  };
+}
+function buildRuleScheduleConfig(nucleus, legacySchedules = []) {
+  const standardByWeekday = createEmptyWeekdayScheduleMap();
+  const rule = NUCLEOS_AULAS[normalizeNucleusName(nucleus)] || null;
+
+  Object.values(rule?.modalidades || {}).forEach((modality) => {
+    Object.entries(modality?.horarios || {}).forEach(([weekday, items]) => {
+      if (!standardByWeekday[weekday]) standardByWeekday[weekday] = [];
+      standardByWeekday[weekday].push(...items);
+    });
+
+    if (Array.isArray(modality?.horariosBase)) {
+      const targets = Array.isArray(modality?.dias) && modality.dias.length
+        ? modality.dias.filter((day) => day in standardByWeekday)
+        : [];
+
+      targets.forEach((weekday) => {
+        standardByWeekday[weekday].push(...modality.horariosBase.map(toScheduleRange));
+      });
+    }
+  });
+
+  Object.keys(standardByWeekday).forEach((weekday) => {
+    standardByWeekday[weekday] = normalizeScheduleStrings(standardByWeekday[weekday]);
+  });
+
+  const legacy = extractScheduleStrings(legacySchedules);
+  const hasConfiguredRule = Object.values(standardByWeekday).some((items) => items.length);
+
+  if (legacy.length) {
+    if (!hasConfiguredRule) {
+      SCHEDULE_WEEKDAYS.forEach((weekday) => {
+        standardByWeekday[weekday] = legacy.slice();
+      });
+    } else {
+      SCHEDULE_WEEKDAYS.forEach((weekday) => {
+        if (!standardByWeekday[weekday].length) {
+          standardByWeekday[weekday] = legacy.slice();
+        }
+      });
+    }
+  }
+
+  return {
+    standardByWeekday,
+    exceptionsByDate: {},
+    updatedAt: "",
+    updatedBy: "",
+  };
+}
+function normalizeScheduleConfig(config, nucleus, legacySchedules = []) {
+  const base = buildRuleScheduleConfig(nucleus, legacySchedules);
+  const rawStandard = config?.standardByWeekday || {};
+  const rawExceptions = config?.exceptionsByDate || {};
+
+  SCHEDULE_WEEKDAYS.forEach((weekday) => {
+    if (Array.isArray(rawStandard[weekday])) {
+      base.standardByWeekday[weekday] = normalizeScheduleStrings(rawStandard[weekday]);
+    }
+  });
+
+  Object.entries(rawExceptions).forEach(([dateISO, items]) => {
+    if (!Array.isArray(items)) return;
+    base.exceptionsByDate[dateISO] = normalizeScheduleStrings(items);
+  });
+
+  base.updatedAt = config?.updatedAt || "";
+  base.updatedBy = config?.updatedBy || "";
+  return base;
+}
+function createScheduleConfigByNucleus(projectKey, calendarMap = {}) {
+  return Object.fromEntries(
+    getVisibleNuclei(projectKey).map((nucleus) => {
+      const legacyEntry = normalizeCalendarEntry(calendarMap?.[nucleus] || {});
+      return [nucleus, normalizeScheduleConfig(null, nucleus, legacyEntry.schedules)];
+    })
+  );
+}
+function createScheduleConfigsByProject(calendarMap = {}) {
+  return Object.fromEntries(
+    PROJECTS.map((project) => [project.key, createScheduleConfigByNucleus(project.key, calendarMap?.[project.key] || {})])
+  );
 }
 function createAttendanceStaffByProject() {
   return Object.fromEntries(
@@ -169,6 +303,8 @@ function normalizeCollaboratorRecord(record) {
     id: record?.id || crypto.randomUUID(),
     studentId: record?.studentId || "",
     studentName: record?.studentName || "",
+    targetType: record?.targetType || (record?.type === "atestado_colaborador" ? "collaborator" : "student"),
+    targetName: record?.targetName || record?.studentName || record?.collaboratorSubjectName || "",
     nucleus: record?.nucleus || "",
     project: normalizeProjectKey(record?.project) || inferProjectKeyFromNucleus(record?.nucleus),
     type: record?.type || "observacao_interna",
@@ -176,6 +312,7 @@ function normalizeCollaboratorRecord(record) {
     createdAt: record?.createdAt || new Date().toISOString(),
     createdBy: record?.createdBy || "",
     collaboratorName: record?.collaboratorName || "",
+    source: record?.source || "painel_colaborador",
     classDate: record?.classDate || "",
     classSchedule: record?.classSchedule || "",
     attachment: record?.attachment
@@ -186,6 +323,25 @@ function normalizeCollaboratorRecord(record) {
           dataUrl: record.attachment.dataUrl || "",
         }
       : null,
+  };
+}
+function normalizeEadWatchRecord(record) {
+  const normalizedCategory = typeof normalizeEadCategory === "function"
+    ? normalizeEadCategory(record?.category)
+    : "";
+  return {
+    id: record?.id || crypto.randomUUID(),
+    project: normalizeProjectKey(record?.project) || state.currentProjectKey,
+    nucleus: normalizeNucleusName(record?.nucleus || ""),
+    collaboratorId: record?.collaboratorId || "",
+    collaboratorName: record?.collaboratorName || "",
+    category: normalizedCategory || String(record?.category || "").trim(),
+    watchDate: record?.watchDate || "",
+    minutes: Number(record?.minutes || 0),
+    notes: record?.notes || "",
+    createdAt: record?.createdAt || new Date().toISOString(),
+    createdBy: record?.createdBy || "",
+    source: record?.source || "ead_manual",
   };
 }
 
@@ -243,8 +399,10 @@ function loadData() {
     state.visitors = [];
     state.history = [];
     state.collaboratorRecordsByProject = {};
+    state.eadWatchByProject = {};
     state.uniformStockByProject = createUniformStockByProject();
     state.classDaysByProject = createProjectCalendars();
+    state.scheduleConfigsByProject = createScheduleConfigsByProject(state.classDaysByProject);
     state.attendanceStaffByProject = createAttendanceStaffByProject();
     state.planningByProject = {};
     state.classLocksByProject = createClassLocksByProject();
@@ -271,8 +429,34 @@ function loadData() {
         Array.isArray(items) ? items.map(normalizeCollaboratorRecord) : [],
       ])
     );
+    state.eadWatchByProject = Object.fromEntries(
+      Object.entries(parsed.eadWatchByProject || {}).map(([projectKey, items]) => [
+        projectKey,
+        Array.isArray(items) ? items.map(normalizeEadWatchRecord) : [],
+      ])
+    );
     state.uniformStockByProject = parsed.uniformStockByProject || createUniformStockByProject();
-    state.classDaysByProject = parsed.classDaysByProject || createProjectCalendars();
+    state.classDaysByProject = Object.fromEntries(
+      Object.entries(parsed.classDaysByProject || createProjectCalendars()).map(([projectKey, bag]) => [
+        projectKey,
+        Object.fromEntries(
+          Object.entries(bag || {}).map(([nucleus, entry]) => [nucleus, normalizeCalendarEntry(entry)])
+        ),
+      ])
+    );
+    state.scheduleConfigsByProject = Object.fromEntries(
+      PROJECTS.map((project) => {
+        const rawConfig = parsed.scheduleConfigsByProject?.[project.key] || {};
+        const calendarBag = state.classDaysByProject[project.key] || {};
+        const nuclei = getVisibleNuclei(project.key);
+        return [project.key, Object.fromEntries(
+          nuclei.map((nucleus) => {
+            const legacyEntry = normalizeCalendarEntry(calendarBag[nucleus] || {});
+            return [nucleus, normalizeScheduleConfig(rawConfig[nucleus], nucleus, legacyEntry.schedules)];
+          })
+        )];
+      })
+    );
     state.attendanceStaffByProject = parsed.attendanceStaffByProject || createAttendanceStaffByProject();
     state.planningByProject = parsed.planningByProject || {};
     state.classLocksByProject = parsed.classLocksByProject || createClassLocksByProject();
@@ -281,6 +465,36 @@ function loadData() {
     state.settingsByProject = parsed.settingsByProject || createSettingsByProject();
     state.supervisaoByProject = parsed.supervisaoByProject || {};
     state.snackStockByProject = parsed.snackStockByProject || createSnackStockByProject();
+
+    PROJECTS.forEach((project) => {
+      if (!state.classDaysByProject[project.key]) {
+        state.classDaysByProject[project.key] = createEmptyCalendarByNucleus(project.key);
+      }
+
+      if (!state.scheduleConfigsByProject[project.key]) {
+        state.scheduleConfigsByProject[project.key] = createScheduleConfigByNucleus(
+          project.key,
+          state.classDaysByProject[project.key]
+        );
+      }
+
+      if (!state.eadWatchByProject[project.key]) {
+        state.eadWatchByProject[project.key] = [];
+      }
+
+      getVisibleNuclei(project.key).forEach((nucleus) => {
+        state.classDaysByProject[project.key][nucleus] = normalizeCalendarEntry(
+          state.classDaysByProject[project.key][nucleus] || {}
+        );
+
+        const legacyEntry = state.classDaysByProject[project.key][nucleus];
+        state.scheduleConfigsByProject[project.key][nucleus] = normalizeScheduleConfig(
+          state.scheduleConfigsByProject[project.key][nucleus],
+          nucleus,
+          legacyEntry.schedules
+        );
+      });
+    });
   } catch (e) {
     console.error("Erro ao carregar storage:", e);
     localStorage.removeItem(STORAGE_KEY);
@@ -305,9 +519,11 @@ function persist() {
       users: state.users,
       history: state.history,
       collaboratorRecordsByProject: state.collaboratorRecordsByProject,
+      eadWatchByProject: state.eadWatchByProject,
       uniformStockByProject: state.uniformStockByProject,
       snackStockByProject: state.snackStockByProject,
       classDaysByProject: state.classDaysByProject,
+      scheduleConfigsByProject: state.scheduleConfigsByProject,
       attendanceStaffByProject: state.attendanceStaffByProject,
       planningByProject: state.planningByProject,
       classLocksByProject: state.classLocksByProject,
@@ -378,6 +594,12 @@ function getProjectCollaboratorRecords(projectKey = state.currentProjectKey) {
   }
   return state.collaboratorRecordsByProject[projectKey];
 }
+function getProjectEadWatchRecords(projectKey = state.currentProjectKey) {
+  if (!state.eadWatchByProject[projectKey]) {
+    state.eadWatchByProject[projectKey] = [];
+  }
+  return state.eadWatchByProject[projectKey];
+}
 function getScopedStudents() {
   const user = currentUser();
   const all = getProjectStudents();
@@ -400,6 +622,23 @@ function getProjectStock(projectKey = state.currentProjectKey) {
 function getProjectCalendar(projectKey = state.currentProjectKey) {
   if (!state.classDaysByProject[projectKey]) state.classDaysByProject[projectKey] = createEmptyCalendarByNucleus(projectKey);
   return state.classDaysByProject[projectKey];
+}
+function getProjectScheduleConfigs(projectKey = state.currentProjectKey) {
+  if (!state.scheduleConfigsByProject[projectKey]) {
+    state.scheduleConfigsByProject[projectKey] = createScheduleConfigByNucleus(
+      projectKey,
+      getProjectCalendar(projectKey)
+    );
+  }
+  return state.scheduleConfigsByProject[projectKey];
+}
+function getNucleusScheduleConfig(nucleus, projectKey = state.currentProjectKey) {
+  const bag = getProjectScheduleConfigs(projectKey);
+  if (!bag[nucleus]) {
+    const legacyEntry = normalizeCalendarEntry(getProjectCalendar(projectKey)?.[nucleus] || {});
+    bag[nucleus] = normalizeScheduleConfig(null, nucleus, legacyEntry.schedules);
+  }
+  return bag[nucleus];
 }
 function getProjectAttendanceStaff(projectKey = state.currentProjectKey) {
   if (!state.attendanceStaffByProject[projectKey]) {

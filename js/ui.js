@@ -30,10 +30,12 @@ tabPages: [
   "tab-dashboard",
   "tab-chamada",
   "tab-professor",
+  "tab-mestre",
   "tab-aulas",
   "tab-gestao",
   "tab-estoque",
   "tab-relatorios",
+  "tab-acompanhamento",
   "tab-admin",
   "tab-fila",
   "tab-supervisao",
@@ -73,11 +75,13 @@ tabPages: [
   professorClassSchedule: el("professorClassSchedule"),
   professorClassProfessorName: el("professorClassProfessorName"),
   professorClassMonitorName: el("professorClassMonitorName"),
+  professorScheduleHint: el("professorScheduleHint"),
   professorClassSave: el("professorClassSave"),
   professorClassStatus: el("professorClassStatus"),
   endClassBtn: el("endClassBtn"),
   classLockBadge: el("classLockBadge"),
 
+  teacherAbsHint: el("teacherAbsHint"),
   planningForm: el("planningForm"),
   planningWeek: el("planningWeek"),
   planningTheme: el("planningTheme"),
@@ -88,11 +92,16 @@ tabPages: [
   teacherAbsType: el("teacherAbsType"),
   teacherAbsStudentWrap: el("teacherAbsStudentWrap"),
   teacherAbsStudent: el("teacherAbsStudent"),
+  teacherAbsCollaboratorWrap: el("teacherAbsCollaboratorWrap"),
+  teacherAbsCollaboratorName: el("teacherAbsCollaboratorName"),
+  teacherAbsTextWrap: el("teacherAbsTextWrap"),
+  teacherAbsTextLabel: el("teacherAbsTextLabel"),
   teacherAbsFile: el("teacherAbsFile"),
+  teacherAbsFileWrap: el("teacherAbsFileWrap"),
+  teacherAbsFileLabel: el("teacherAbsFileLabel"),
   teacherAbsText: el("teacherAbsText"),
   teacherAbsSave: el("teacherAbsSave"),
   teacherAbsStatus: el("teacherAbsStatus"),
-  teacherAbsHistory: el("teacherAbsHistory"),
 
   teacherMestreTheme: el("teacherMestreTheme"),
   teacherMestreOpen: el("teacherMestreOpen"),
@@ -110,10 +119,22 @@ tabPages: [
   gestaoAlunosTableBody: el("gestaoAlunosTableBody"),
   gestaoAlunosBadge: el("gestaoAlunosBadge"),
 
-  classCalendarForm: el("classCalendarForm"),
+  scheduleConfigPanel: el("scheduleConfigPanel"),
+  scheduleConfigToggle: el("scheduleConfigToggle"),
+  scheduleConfigNucleus: el("scheduleConfigNucleus"),
+  scheduleConfigStatus: el("scheduleConfigStatus"),
+  scheduleDayDate: el("scheduleDayDate"),
+  scheduleRegisterDayBtn: el("scheduleRegisterDayBtn"),
+  scheduleResetDefaultsBtn: el("scheduleResetDefaultsBtn"),
+  scheduleSaveStandardBtn: el("scheduleSaveStandardBtn"),
+  scheduleExceptionDate: el("scheduleExceptionDate"),
+  scheduleSaveExceptionBtn: el("scheduleSaveExceptionBtn"),
+  scheduleRemoveExceptionBtn: el("scheduleRemoveExceptionBtn"),
+  scheduleDayInputs: Object.fromEntries(
+    SCHEDULE_WEEKDAYS.map((day) => [day, el(`scheduleDay${day}`)])
+  ),
+  scheduleExceptionText: el("scheduleExceptionText"),
   classCalendarBoard: el("classCalendarBoard"),
-  calendarStartTimes: Array.from({ length: 6 }, (_, i) => el(`calendarStartTime${i + 1}`)),
-  calendarEndTimes: Array.from({ length: 6 }, (_, i) => el(`calendarEndTime${i + 1}`)),
 
   attendanceNucleusFilter: el("attendanceNucleusFilter"),
   attendanceReportBoard: el("attendanceReportBoard"),
@@ -174,6 +195,25 @@ tabPages: [
   adminLogNucleusFilter: el("adminLogNucleusFilter"),
   adminOpenLogModal: el("adminOpenLogModal"),
 
+  acompanhamentoTypeFilter: el("acompanhamentoTypeFilter"),
+  acompanhamentoNucleusFilter: el("acompanhamentoNucleusFilter"),
+  acompanhamentoStudentFilter: el("acompanhamentoStudentFilter"),
+  acompanhamentoCollaboratorFilter: el("acompanhamentoCollaboratorFilter"),
+  acompanhamentoDateStart: el("acompanhamentoDateStart"),
+  acompanhamentoDateEnd: el("acompanhamentoDateEnd"),
+  acompanhamentoClearBtn: el("acompanhamentoClearBtn"),
+  acompanhamentoPrintBtn: el("acompanhamentoPrintBtn"),
+  acompanhamentoCountBadge: el("acompanhamentoCountBadge"),
+  acompanhamentoBoard: el("acompanhamentoBoard"),
+  eadWatchForm: el("eadWatchForm"),
+  eadWatchCollaborator: el("eadWatchCollaborator"),
+  eadWatchNucleus: el("eadWatchNucleus"),
+  eadWatchDate: el("eadWatchDate"),
+  eadWatchMinutes: el("eadWatchMinutes"),
+  eadWatchCategory: el("eadWatchCategory"),
+  eadWatchNotes: el("eadWatchNotes"),
+  eadWatchStatus: el("eadWatchStatus"),
+
   // modais
   logModal: el("logModal"),
   logModalTitle: el("logModalTitle"),
@@ -217,6 +257,9 @@ function hydrateNucleusSelects() {
     "visitorNucleus",
     "dashNucleusFilter",
     "adminLogNucleusFilter",
+    "scheduleConfigNucleus",
+    "acompanhamentoNucleusFilter",
+    "eadWatchNucleus",
   ];
   const visible = getVisibleNuclei();
 
@@ -243,11 +286,11 @@ function hydrateNucleusSelects() {
 function hydrateStudentScheduleOptions() {
   if (!ui.studentSchedule) return;
   const nucleus = el("studentNucleus")?.value;
-  const schedules = getProjectCalendar()?.[nucleus]?.schedules || [];
+  const schedules = getNucleusScheduleOptions(nucleus);
 
   ui.studentSchedule.innerHTML = `<option value="">Selecione (opcional)</option>`;
   schedules.forEach((slot) => {
-    const value = `${slot.start} às ${slot.end}`;
+    const value = typeof slot === "string" ? slot : `${slot.start} às ${slot.end}`;
     const opt = document.createElement("option");
     opt.value = value;
     opt.textContent = value;
@@ -261,6 +304,7 @@ function hydrateProfessorScheduleOptions(nucleus, dateISO = ui.professorClassDat
   const schedules = getNucleusScheduleOptions(nucleus, dateISO);
   const select = ui.professorClassSchedule;
   const selected = String(currentValue || select.value || "").trim();
+  const weekday = getWeekdayLabel(dateISO);
 
   select.innerHTML = "";
 
@@ -287,6 +331,20 @@ function hydrateProfessorScheduleOptions(nucleus, dateISO = ui.professorClassDat
 
   select.disabled = schedules.length === 0 && !selected;
   select.value = selected && [...select.options].some((option) => option.value === selected) ? selected : "";
+
+  if (ui.professorScheduleHint) {
+    if (!dateISO) {
+      ui.professorScheduleHint.textContent = "Defina a data para carregar os horários compatíveis.";
+    } else if (!schedules.length) {
+      ui.professorScheduleHint.textContent = weekday
+        ? `Nenhum horário ativo para ${weekday}. Verifique a grade padrão ou uma exceção por data.`
+        : "Nenhum horário compatível com a data informada.";
+    } else {
+      ui.professorScheduleHint.textContent = weekday
+        ? `${schedules.length} horário(s) disponível(is) para ${weekday}.`
+        : `${schedules.length} horário(s) disponível(is).`;
+    }
+  }
 }
 function hydrateStudentModalityOptions() {
   if (!ui.studentModality) return;
@@ -569,7 +627,7 @@ function bindCollapsiblePanels() {
   const pairs = [
     { toggleId: "adminMestreToggle", panelId: "adminMestrePanel" },
     { toggleId: "usersPanelToggle", panelId: "usersPanel" },
-    { toggleId: "adminSupportToggle", panelId: "adminSupportPanel" }
+    { toggleId: "scheduleConfigToggle", panelId: "scheduleConfigPanel" }
   ];
 
   pairs.forEach(({ toggleId, panelId }) => {

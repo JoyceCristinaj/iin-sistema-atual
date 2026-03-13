@@ -137,13 +137,30 @@ function uniqueScheduleValues(values) {
 }
 
 function getNucleusScheduleOptions(nucleus, dateISO = "") {
+  const weekday = getWeekdayLabel(dateISO);
+  const config = typeof getNucleusScheduleConfig === "function"
+    ? getNucleusScheduleConfig(String(nucleus || "").trim())
+    : null;
+
+  if (config) {
+    if (dateISO && Array.isArray(config.exceptionsByDate?.[dateISO]) && config.exceptionsByDate[dateISO].length) {
+      return uniqueScheduleValues(config.exceptionsByDate[dateISO]);
+    }
+
+    if (weekday && Array.isArray(config.standardByWeekday?.[weekday]) && config.standardByWeekday[weekday].length) {
+      return uniqueScheduleValues(config.standardByWeekday[weekday]);
+    }
+
+    return uniqueScheduleValues(
+      Object.values(config.standardByWeekday || {}).flatMap((items) => Array.isArray(items) ? items : [])
+    );
+  }
+
   const nucleusKey = String(nucleus || "").trim();
   const rule = NUCLEOS_AULAS[nucleusKey];
   if (!rule || !rule.modalidades) return [];
 
-  const weekday = getWeekdayLabel(dateISO);
   const values = [];
-
   Object.values(rule.modalidades).forEach((modality) => {
     if (weekday && modality?.horarios?.[weekday]) {
       values.push(...modality.horarios[weekday]);

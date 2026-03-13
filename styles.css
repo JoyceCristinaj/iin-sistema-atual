@@ -2273,3 +2273,73 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
   width: 22px;
   height: 22px;
 }
+
+.field-help {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.align-end {
+  align-items: flex-end;
+}
+
+.schedule-week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.schedule-week-grid textarea,
+.schedule-exception-box textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.schedule-exception-box {
+  margin-top: 14px;
+}
+
+.schedule-summary-list {
+  margin: 12px 0;
+  padding-left: 18px;
+  color: #334155;
+}
+
+.schedule-summary-list li + li {
+  margin-top: 6px;
+}
+
+.history-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.acompanhamento-card {
+  border: 1px solid #d7dde7;
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 10px;
+}
+
+.acompanhamento-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.acompanhamento-detail {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+}
+
+.acompanhamento-detail p {
+  margin: 0;
+}

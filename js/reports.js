@@ -459,19 +459,31 @@ function renderClassDays() {
 
   getVisibleNuclei().forEach((nucleus) => {
     const data = calendar[nucleus] || { days: [], schedules: [] };
+    const config = getNucleusScheduleConfig(nucleus);
     const days = data.days || [];
+    const exceptionDates = Object.keys(config.exceptionsByDate || {}).sort((a, b) => b.localeCompare(a));
+    const standardSummary = SCHEDULE_WEEKDAYS
+      .map((weekday) => {
+        const items = config.standardByWeekday?.[weekday] || [];
+        return items.length ? `<li><strong>${escapeHtml(weekday)}:</strong> ${escapeHtml(items.join(" • "))}</li>` : "";
+      })
+      .filter(Boolean)
+      .join("");
+
     const card = document.createElement("article");
     card.className = "calendar-card";
     card.innerHTML = `
       <div class="calendar-header">
         <h3>${escapeHtml(nucleus)}</h3>
-        <span class="badge">${days.length} aulas</span>
+        <span class="badge">${days.length} datas</span>
       </div>
-      <p class="muted">Horários: ${escapeHtml(formatSchedules(data.schedules))}</p>
+      <p class="muted">Horários padrão: ${escapeHtml(formatSchedules(data.schedules))}</p>
+      ${standardSummary ? `<ul class="schedule-summary-list">${standardSummary}</ul>` : `<p class="empty">Sem horários padrão configurados.</p>`}
+      <p class="muted">Exceções salvas: ${exceptionDates.length ? exceptionDates.map((date) => formatDateLabel(date)).join(" • ") : "nenhuma"}</p>
     `;
 
     if (!days.length) {
-      card.innerHTML += `<p class="empty">Sem aulas registradas.</p>`;
+      card.innerHTML += `<p class="empty">Sem datas de aula registradas.</p>`;
     } else {
       const list = document.createElement("ul");
       list.className = "history-list";
@@ -606,12 +618,76 @@ function renderAlerts() {
 
 /* ========= PROFESSOR: ATESTADO + MOMENTO DO MESTRE ========= */
 const SUPPORT_ATTACHMENT_MAX_BYTES = 1500000;
+const TEACHER_SUPPORT_TYPE_CONFIG = {
+  atestado_aluno: {
+    requiresStudent: true,
+    requiresCollaboratorName: false,
+    textRequired: false,
+    fileRequired: true,
+    textLabel: "Texto complementar",
+    textHelp: "Adicione contexto opcional sobre o atestado do aluno.",
+    textPlaceholder: "Observação complementar (opcional)",
+    fileLabel: "Atestado do aluno",
+    fileHelp: "Envie imagem ou PDF do atestado.",
+    hint: "Selecione o aluno, anexe o atestado e adicione texto somente se precisar complementar.",
+  },
+  justificativa_informal: {
+    requiresStudent: true,
+    requiresCollaboratorName: false,
+    textRequired: true,
+    fileRequired: false,
+    textLabel: "Relato do responsável",
+    textHelp: "Descreva claramente o que o responsável informou sobre a falta.",
+    textPlaceholder: "Ex: responsável informou que o aluno passou mal e ficará em observação.",
+    fileLabel: "Anexo opcional",
+    fileHelp: "Envie imagem ou arquivo apenas se houver complemento.",
+    hint: "Esse registro é textual. Escreva a justificativa informal com clareza.",
+  },
+  imagem_responsavel: {
+    requiresStudent: true,
+    requiresCollaboratorName: false,
+    textRequired: false,
+    fileRequired: true,
+    textLabel: "Contexto da imagem",
+    textHelp: "Informe um contexto curto apenas se ajudar a identificar o envio.",
+    textPlaceholder: "Contexto opcional da imagem enviada",
+    fileLabel: "Imagem / arquivo enviado",
+    fileHelp: "Envie a imagem ou o arquivo recebido do responsável.",
+    hint: "Selecione o aluno e envie a imagem ou arquivo recebido do responsável.",
+  },
+  observacao_interna: {
+    requiresStudent: true,
+    requiresCollaboratorName: false,
+    textRequired: true,
+    fileRequired: false,
+    textLabel: "Observação interna",
+    textHelp: "Esse campo é de uso interno da equipe.",
+    textPlaceholder: "Escreva a observação interna",
+    fileLabel: "Anexo opcional",
+    fileHelp: "Anexo opcional apenas se ajudar o acompanhamento interno.",
+    hint: "Use esta opção para registrar observações internas da equipe.",
+  },
+  atestado_colaborador: {
+    requiresStudent: false,
+    requiresCollaboratorName: true,
+    textRequired: false,
+    fileRequired: true,
+    textLabel: "Observação curta",
+    textHelp: "Se necessário, registre apenas uma observação breve.",
+    textPlaceholder: "Observação opcional curta",
+    fileLabel: "Atestado do colaborador",
+    fileHelp: "Envie o atestado em imagem ou PDF. Não use este campo para justificativa informal.",
+    hint: "Nesse tipo, informe o nome do colaborador e anexe o atestado. Não há justificativa informal.",
+  },
+};
 
 function supportRecordTypeLabel(type) {
   if (type === "atestado_aluno") return "Atestado do aluno";
-  if (type === "atestado_colaborador") return "Atestado / justificativa do colaborador";
+  if (type === "atestado_colaborador") return "Atestado do colaborador";
   if (type === "justificativa_informal") return "Justificativa informal";
   if (type === "imagem_responsavel") return "Foto / imagem enviada pelo responsável";
+  if (type === "ead_tempo") return "Tempo de aula EAD";
+  if (type === "supervisao_checklist") return "Checklist de metodologia";
   return "Observação interna";
 }
 
@@ -619,6 +695,65 @@ function setTeacherSupportStatus(message, isError = false) {
   if (!ui.teacherAbsStatus) return;
   ui.teacherAbsStatus.textContent = message || "";
   ui.teacherAbsStatus.style.color = isError ? "#b31d2f" : "";
+}
+function getTeacherSupportTypeConfig(type = ui.teacherAbsType?.value || "atestado_aluno") {
+  return TEACHER_SUPPORT_TYPE_CONFIG[type] || TEACHER_SUPPORT_TYPE_CONFIG.atestado_aluno;
+}
+function syncTeacherSupportForm() {
+  const type = ui.teacherAbsType?.value || "atestado_aluno";
+  const config = getTeacherSupportTypeConfig(type);
+
+  ui.teacherAbsStudentWrap?.classList.toggle("hidden", !config.requiresStudent);
+  ui.teacherAbsCollaboratorWrap?.classList.toggle("hidden", !config.requiresCollaboratorName);
+
+  if (ui.teacherAbsTextWrap) {
+    ui.teacherAbsTextWrap.childNodes[0].textContent = config.textLabel;
+  }
+  if (ui.teacherAbsTextLabel) ui.teacherAbsTextLabel.textContent = config.textHelp;
+  if (ui.teacherAbsText) {
+    ui.teacherAbsText.placeholder = config.textPlaceholder;
+    ui.teacherAbsText.required = config.textRequired;
+  }
+
+  if (ui.teacherAbsFileWrap) {
+    ui.teacherAbsFileWrap.childNodes[0].textContent = config.fileLabel;
+  }
+  if (ui.teacherAbsFileLabel) ui.teacherAbsFileLabel.textContent = config.fileHelp;
+  if (ui.teacherAbsFile) {
+    ui.teacherAbsFile.required = config.fileRequired;
+    ui.teacherAbsFile.accept = ".pdf,image/*";
+  }
+
+  if (ui.teacherAbsHint) ui.teacherAbsHint.textContent = config.hint;
+  if (!config.requiresStudent && ui.teacherAbsStudent) ui.teacherAbsStudent.value = "";
+  if (!config.requiresCollaboratorName && ui.teacherAbsCollaboratorName) ui.teacherAbsCollaboratorName.value = "";
+}
+function setupProfessorTabs() {
+  const root = document.getElementById("teacherMestreTabContent");
+  if (!root || root.dataset.ready === "1") return;
+
+  const mestreTools = document.getElementById("teacherMestreTools");
+  if (mestreTools) {
+    const panel = document.createElement("section");
+    panel.className = "panel";
+    panel.innerHTML = `
+      <div class="panel-title-row">
+        <h2>Momento do Mestre</h2>
+        <span class="badge">Pedagógico</span>
+      </div>
+      <p class="muted">Separe nesta aba o apoio pedagógico, os temas da semana e o material em PDF.</p>
+    `;
+    panel.appendChild(mestreTools);
+    root.appendChild(panel);
+  }
+
+  ["planningPanel", "professorHistoryPanel"].forEach((id) => {
+    const node = document.getElementById(id);
+    if (node) root.appendChild(node);
+  });
+
+  document.getElementById("teacherAbsHistoryPanel")?.remove();
+  root.dataset.ready = "1";
 }
 
 function makeSupportRecordListItem(record, showProject = false) {
@@ -630,6 +765,8 @@ function makeSupportRecordListItem(record, showProject = false) {
   const when = Number.isNaN(createdAt.getTime())
     ? record.createdAt || "-"
     : createdAt.toLocaleString("pt-BR");
+  const targetLabel = record.targetType === "collaborator" ? "Colaborador" : "Aluno";
+  const targetName = record.targetName || record.studentName || "Não informado";
 
   const metaParts = [
     showProject ? `Projeto: ${record.project || "-"}` : "",
@@ -644,10 +781,10 @@ function makeSupportRecordListItem(record, showProject = false) {
 
   li.innerHTML = `
     <div>
-      <strong>${escapeHtml(record.studentName || "Aluno não informado")}</strong>
+      <strong>${escapeHtml(targetName)}</strong>
       <span class="badge">${escapeHtml(supportRecordTypeLabel(record.type))}</span>
     </div>
-    <div class="muted">${escapeHtml(metaParts.join(" • "))}</div>
+    <div class="muted">${escapeHtml(`${targetLabel}: ${targetName} • ${metaParts.join(" • ")}`)}</div>
     ${record.text ? `<div>${escapeHtml(record.text)}</div>` : ""}
     ${classRef ? `<div class="muted">${escapeHtml(classRef)}</div>` : ""}
   `;
@@ -707,20 +844,32 @@ function onTeacherSaveAtestado() {
   const user = currentUser();
   if (!user || user.role !== "professor") return;
 
+  const type = ui.teacherAbsType?.value || "observacao_interna";
+  const config = getTeacherSupportTypeConfig(type);
   const studentId = ui.teacherAbsStudent?.value || "";
   const student = getProjectStudents().find((item) => item.id === studentId);
-  const type = ui.teacherAbsType?.value || "observacao_interna";
+  const collaboratorSubjectName = ui.teacherAbsCollaboratorName?.value?.trim() || "";
   const text = ui.teacherAbsText?.value?.trim() || "";
   const file = ui.teacherAbsFile?.files?.[0];
   const staff = getAttendanceStaffByNucleus(user.nucleus);
 
-  if (!student) {
+  if (config.requiresStudent && !student) {
     setTeacherSupportStatus("Selecione o aluno relacionado ao registro.", true);
     return;
   }
 
-  if (!text && !file) {
-    setTeacherSupportStatus("Informe um texto, um anexo ou ambos para salvar o registro.", true);
+  if (config.requiresCollaboratorName && !collaboratorSubjectName) {
+    setTeacherSupportStatus("Informe o nome do colaborador relacionado ao atestado.", true);
+    return;
+  }
+
+  if (config.textRequired && !text) {
+    setTeacherSupportStatus("Preencha o texto obrigatório deste tipo de registro.", true);
+    return;
+  }
+
+  if (config.fileRequired && !file) {
+    setTeacherSupportStatus("Anexe o arquivo obrigatório para esse tipo de registro.", true);
     return;
   }
 
@@ -733,9 +882,11 @@ function onTeacherSaveAtestado() {
     const createdAt = new Date().toISOString();
     const record = normalizeCollaboratorRecord({
       id: crypto.randomUUID(),
-      studentId: student.id,
-      studentName: student.name,
-      nucleus: student.nucleus || user.nucleus,
+      studentId: student?.id || "",
+      studentName: student?.name || "",
+      targetType: config.requiresCollaboratorName ? "collaborator" : "student",
+      targetName: config.requiresCollaboratorName ? collaboratorSubjectName : (student?.name || ""),
+      nucleus: student?.nucleus || user.nucleus,
       project: state.currentProjectKey,
       type,
       text,
@@ -743,13 +894,14 @@ function onTeacherSaveAtestado() {
       createdAt,
       createdBy: user.username,
       collaboratorName: staff.professorName || user.username,
+      source: "painel_colaborador",
       classDate: staff.classDate || "",
       classSchedule: ui.professorClassSchedule?.value || staff.classSchedule || "",
     });
 
     getProjectCollaboratorRecords().unshift(record);
 
-    if (attachment) {
+    if (attachment && student) {
       if (!Array.isArray(student.absences)) student.absences = [];
       student.absences.unshift({
         id: record.id,
@@ -760,7 +912,7 @@ function onTeacherSaveAtestado() {
       });
     }
 
-    if (type !== "observacao_interna") {
+    if (student && type !== "observacao_interna") {
       const dateRef = staff.classDate || isoToday();
       student.attendance = "justificado";
       upsertAttendanceLog(student, dateRef, "justificado", {
@@ -770,18 +922,21 @@ function onTeacherSaveAtestado() {
       });
     }
 
-    pushHistory(
-      student,
-      user,
-      "registro_colaborador",
-      `${supportRecordTypeLabel(record.type)}${record.text ? ` • ${record.text}` : attachment ? ` • ${attachment.name}` : ""}`
-    );
-    pushNucleusLog(user.nucleus, "Registro do colaborador", `${student.name} • ${supportRecordTypeLabel(record.type)}`, user);
+    if (student) {
+      pushHistory(
+        student,
+        user,
+        "registro_colaborador",
+        `${supportRecordTypeLabel(record.type)}${record.text ? ` • ${record.text}` : attachment ? ` • ${attachment.name}` : ""}`
+      );
+    }
+    pushNucleusLog(user.nucleus, "Registro do colaborador", `${record.targetName || "-"} • ${supportRecordTypeLabel(record.type)}`, user);
 
     persist();
 
     if (ui.teacherAbsText) ui.teacherAbsText.value = "";
     if (ui.teacherAbsFile) ui.teacherAbsFile.value = "";
+    if (ui.teacherAbsCollaboratorName) ui.teacherAbsCollaboratorName.value = "";
 
     render();
     setTeacherSupportStatus("Registro salvo com sucesso.");
@@ -873,6 +1028,315 @@ function renderAdminMestreTable() {
     });
     ui.adminMestreTableBody.appendChild(tr);
   });
+}
+
+function countFilledChecklistItems(record = {}) {
+  return Object.values(record || {}).filter(Boolean).length;
+}
+function buildAcompanhamentoEntries() {
+  const supportEntries = getProjectCollaboratorRecords().map((record) => ({
+    id: `support-${record.id}`,
+    rawId: record.id,
+    type: record.type,
+    origin: "Painel do colaborador",
+    project: record.project || state.currentProjectKey,
+    nucleus: record.nucleus || "-",
+    studentName: record.targetType === "student" ? (record.targetName || record.studentName || "") : "",
+    collaboratorName: record.targetType === "collaborator"
+      ? (record.targetName || "")
+      : (record.collaboratorName || record.createdBy || ""),
+    registeredBy: record.createdBy || "-",
+    createdAt: record.createdAt || "",
+    referenceDate: record.classDate || String(record.createdAt || "").slice(0, 10),
+    title: supportRecordTypeLabel(record.type),
+    summary: record.text || record.attachment?.name || "Registro operacional",
+    details: [
+      record.classDate ? `Data da aula: ${formatDateLabel(record.classDate)}` : "",
+      record.classSchedule ? `Horário: ${record.classSchedule}` : "",
+      record.text || "",
+    ].filter(Boolean),
+    attachment: record.attachment || null,
+  }));
+
+  const eadEntries = getProjectEadWatchRecords().map((record) => ({
+    id: `ead-${record.id}`,
+    rawId: record.id,
+    type: "ead_tempo",
+    origin: "Acompanhamento EAD",
+    project: record.project || state.currentProjectKey,
+    nucleus: record.nucleus || "-",
+    studentName: "",
+    collaboratorName: record.collaboratorName || "-",
+    registeredBy: record.createdBy || "-",
+    createdAt: record.createdAt || "",
+    referenceDate: record.watchDate || String(record.createdAt || "").slice(0, 10),
+    title: "Tempo de aula EAD",
+    summary: `${Number(record.minutes || 0)} min${record.category ? ` • ${record.category}` : ""}`,
+    details: [
+      record.watchDate ? `Data assistida: ${formatDateLabel(record.watchDate)}` : "",
+      record.notes || "",
+    ].filter(Boolean),
+    attachment: null,
+  }));
+
+  const supervisaoEntries = getSupervisaoBag().map((record) => ({
+    id: `supervisao-${record.id}`,
+    rawId: record.id,
+    type: "supervisao_checklist",
+    origin: "Checklist de supervisão",
+    project: record.project || state.currentProjectKey,
+    nucleus: record.nucleo || "-",
+    studentName: "",
+    collaboratorName: record.instrutor || record.supervisor || record.supervisorMensal || "-",
+    registeredBy: record.supervisor || record.supervisorMensal || "Supervisão",
+    createdAt: record.createdAt || "",
+    referenceDate: record.data || record.dia || String(record.createdAt || "").slice(0, 10),
+    title: "Checklist de metodologia",
+    summary: `${record.modalidade || "-"} • Diário ${countFilledChecklistItems(record.checklistDiario)} itens • Mensal ${countFilledChecklistItems(record.metodologiaInstrutores) + countFilledChecklistItems(record.metodologiaTurmas)} itens`,
+    details: [
+      record.data ? `Data diária: ${formatDateLabel(record.data)}` : "",
+      record.dia ? `Data mensal: ${formatDateLabel(record.dia)}` : "",
+      record.mes ? `Mês de referência: ${record.mes}` : "",
+      record.observacoesGerais || "",
+      record.avaliacaoGeral ? `Avaliação geral: ${record.avaliacaoGeral}` : "",
+    ].filter(Boolean),
+    attachment: null,
+  }));
+
+  return supportEntries
+    .concat(eadEntries, supervisaoEntries)
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+function fillNamedFilterSelect(node, values = [], allLabel = "Todos") {
+  if (!node) return;
+  const current = node.value || "todos";
+  node.innerHTML = `<option value="todos">${allLabel}</option>`;
+
+  values.forEach((value) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = value;
+    node.appendChild(opt);
+  });
+
+  node.value = [...node.options].some((option) => option.value === current) ? current : "todos";
+}
+function hydrateAcompanhamentoFilters(entries = buildAcompanhamentoEntries()) {
+  const studentNames = Array.from(new Set(entries.map((entry) => entry.studentName).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const collaboratorNames = Array.from(new Set(entries.map((entry) => entry.collaboratorName).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  fillNamedFilterSelect(ui.acompanhamentoStudentFilter, studentNames);
+  fillNamedFilterSelect(ui.acompanhamentoCollaboratorFilter, collaboratorNames);
+
+  if (ui.eadWatchCollaborator) {
+    const current = ui.eadWatchCollaborator.value || "";
+    ui.eadWatchCollaborator.innerHTML = `<option value="">Selecione</option>`;
+
+    getProjectUsers()
+      .filter((item) => item.role === "professor")
+      .sort((a, b) => String(a.username || "").localeCompare(String(b.username || ""), "pt-BR"))
+      .forEach((item) => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = `${item.username}${item.nucleus ? ` • ${item.nucleus}` : ""}`;
+        ui.eadWatchCollaborator.appendChild(opt);
+      });
+
+    if ([...ui.eadWatchCollaborator.options].some((option) => option.value === current)) {
+      ui.eadWatchCollaborator.value = current;
+    }
+  }
+
+  if (ui.eadWatchDate && !ui.eadWatchDate.value) {
+    ui.eadWatchDate.value = isoToday();
+  }
+}
+function getFilteredAcompanhamentoEntries() {
+  const type = ui.acompanhamentoTypeFilter?.value || "todos";
+  const nucleus = ui.acompanhamentoNucleusFilter?.value || "todos";
+  const student = ui.acompanhamentoStudentFilter?.value || "todos";
+  const collaborator = ui.acompanhamentoCollaboratorFilter?.value || "todos";
+  const dateStart = ui.acompanhamentoDateStart?.value || "";
+  const dateEnd = ui.acompanhamentoDateEnd?.value || "";
+
+  return buildAcompanhamentoEntries().filter((entry) => {
+    if (type !== "todos" && entry.type !== type) return false;
+    if (nucleus !== "todos" && entry.nucleus !== nucleus) return false;
+    if (student !== "todos" && entry.studentName !== student) return false;
+    if (collaborator !== "todos" && entry.collaboratorName !== collaborator) return false;
+    if (dateStart && String(entry.referenceDate || "").localeCompare(dateStart) < 0) return false;
+    if (dateEnd && String(entry.referenceDate || "").localeCompare(dateEnd) > 0) return false;
+    return true;
+  });
+}
+function renderAcompanhamentoTab() {
+  if (!ui.acompanhamentoBoard) return;
+
+  const user = currentUser();
+  if (!user || !["admin", "gestao"].includes(user.role)) return;
+
+  const allEntries = buildAcompanhamentoEntries();
+  hydrateAcompanhamentoFilters(allEntries);
+
+  const entries = getFilteredAcompanhamentoEntries();
+  ui.acompanhamentoBoard.innerHTML = "";
+  if (ui.acompanhamentoCountBadge) {
+    ui.acompanhamentoCountBadge.textContent = `${entries.length} registros`;
+  }
+
+  if (!entries.length) {
+    ui.acompanhamentoBoard.innerHTML = `<div class="empty">Nenhum registro encontrado com os filtros atuais.</div>`;
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const article = document.createElement("article");
+    article.className = "acompanhamento-card";
+    article.innerHTML = `
+      <div class="acompanhamento-top">
+        <div>
+          <strong>${escapeHtml(entry.title)}</strong>
+          <span class="badge">${escapeHtml(entry.origin)}</span>
+        </div>
+        <div class="muted">${escapeHtml(new Date(entry.createdAt || "").toLocaleString("pt-BR"))}</div>
+      </div>
+      <div class="muted">${escapeHtml(`Projeto: ${entry.project || "-"} • Núcleo: ${entry.nucleus || "-"} • Aluno: ${entry.studentName || "-"} • Colaborador: ${entry.collaboratorName || "-"} • Registrado por: ${entry.registeredBy || "-"}`)}</div>
+      <div>${escapeHtml(entry.summary || "-")}</div>
+      ${entry.details.length ? `<div class="acompanhamento-detail">${entry.details.map((detail) => `<p>${escapeHtml(detail)}</p>`).join("")}</div>` : ""}
+    `;
+
+    if (entry.attachment?.dataUrl) {
+      const actions = document.createElement("div");
+      actions.className = "toolbar compact";
+
+      const link = document.createElement("a");
+      link.className = "ghost";
+      link.href = entry.attachment.dataUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = `Abrir anexo: ${entry.attachment.name || "arquivo"}`;
+      actions.appendChild(link);
+      article.appendChild(actions);
+    }
+
+    ui.acompanhamentoBoard.appendChild(article);
+  });
+}
+function syncEadWatchCollaborator() {
+  const collaboratorId = ui.eadWatchCollaborator?.value || "";
+  const user = getProjectUsers().find((item) => item.id === collaboratorId);
+  if (user?.nucleus && ui.eadWatchNucleus) {
+    ui.eadWatchNucleus.value = user.nucleus;
+  }
+}
+function onSaveEadWatchRecord(event) {
+  event.preventDefault();
+
+  const user = currentUser();
+  if (!user || !["admin", "gestao"].includes(user.role)) return;
+
+  const collaboratorId = ui.eadWatchCollaborator?.value || "";
+  const collaborator = getProjectUsers().find((item) => item.id === collaboratorId);
+  const nucleus = ui.eadWatchNucleus?.value || collaborator?.nucleus || "";
+  const watchDate = ui.eadWatchDate?.value || "";
+  const minutes = Number(ui.eadWatchMinutes?.value || 0);
+  const category = ui.eadWatchCategory?.value || "";
+  const notes = ui.eadWatchNotes?.value?.trim() || "";
+
+  if (!collaborator || !watchDate || !nucleus || !Number.isFinite(minutes) || minutes <= 0) {
+    if (ui.eadWatchStatus) ui.eadWatchStatus.textContent = "Preencha colaborador, núcleo, data e minutos assistidos.";
+    return;
+  }
+
+  getProjectEadWatchRecords().unshift(normalizeEadWatchRecord({
+    id: crypto.randomUUID(),
+    project: state.currentProjectKey,
+    nucleus,
+    collaboratorId: collaborator.id,
+    collaboratorName: collaborator.username,
+    category,
+    watchDate,
+    minutes,
+    notes,
+    createdAt: new Date().toISOString(),
+    createdBy: user.username,
+    source: "ead_manual",
+  }));
+
+  pushNucleusLog(nucleus, "Acompanhamento EAD", `${collaborator.username} • ${minutes} min`, user);
+  persist();
+  ui.eadWatchForm?.reset();
+  if (ui.eadWatchDate) ui.eadWatchDate.value = isoToday();
+  if (ui.eadWatchStatus) ui.eadWatchStatus.textContent = "Tempo de aula EAD salvo com sucesso.";
+  renderAcompanhamentoTab();
+}
+function clearAcompanhamentoFilters() {
+  if (ui.acompanhamentoTypeFilter) ui.acompanhamentoTypeFilter.value = "todos";
+  if (ui.acompanhamentoNucleusFilter) ui.acompanhamentoNucleusFilter.value = "todos";
+  if (ui.acompanhamentoStudentFilter) ui.acompanhamentoStudentFilter.value = "todos";
+  if (ui.acompanhamentoCollaboratorFilter) ui.acompanhamentoCollaboratorFilter.value = "todos";
+  if (ui.acompanhamentoDateStart) ui.acompanhamentoDateStart.value = "";
+  if (ui.acompanhamentoDateEnd) ui.acompanhamentoDateEnd.value = "";
+  renderAcompanhamentoTab();
+}
+function printAcompanhamentoReport() {
+  const entries = getFilteredAcompanhamentoEntries();
+  if (!entries.length) return;
+
+  const rows = entries.map((entry) => `
+    <tr>
+      <td>${escapeHtml(new Date(entry.createdAt || "").toLocaleString("pt-BR"))}</td>
+      <td>${escapeHtml(supportRecordTypeLabel(entry.type))}</td>
+      <td>${escapeHtml(entry.nucleus || "-")}</td>
+      <td>${escapeHtml(entry.studentName || "-")}</td>
+      <td>${escapeHtml(entry.collaboratorName || "-")}</td>
+      <td>${escapeHtml(entry.origin || "-")}</td>
+      <td>${escapeHtml(entry.registeredBy || "-")}</td>
+      <td>${escapeHtml(entry.summary || "-")}</td>
+    </tr>
+  `).join("");
+
+  const popup = window.open("", "_blank", "width=1120,height=760");
+  if (!popup) return;
+
+  popup.document.write(`
+    <html lang="pt-BR">
+      <head>
+        <title>Histórico de Acompanhamento</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+          h1 { margin: 0 0 8px; }
+          p { margin: 0 0 16px; color: #444; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { border: 1px solid #cfcfcf; padding: 8px; text-align: left; vertical-align: top; }
+          th { background: #f3f3f3; }
+          .toolbar { margin-bottom: 16px; }
+          @media print { .toolbar { display: none; } body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="toolbar"><button onclick="window.print()">Imprimir</button></div>
+        <h1>Histórico de Acompanhamento</h1>
+        <p>Gerado em ${escapeHtml(new Date().toLocaleString("pt-BR"))}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Tipo</th>
+              <th>Núcleo</th>
+              <th>Aluno</th>
+              <th>Colaborador</th>
+              <th>Origem</th>
+              <th>Registrado por</th>
+              <th>Resumo</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body>
+    </html>
+  `);
+  popup.document.close();
 }
 
 function openPdfModal(title, dataUrl) {

@@ -149,10 +149,12 @@
             <button class="tab-btn active" data-tab="tab-dashboard">Dashboard</button>
             <button class="tab-btn" data-tab="tab-chamada">Chamada</button>
             <button class="tab-btn" data-tab="tab-professor">Colaborador</button>
+            <button class="tab-btn" data-tab="tab-mestre">Momento do Mestre</button>
             <button class="tab-btn" data-tab="tab-aulas">Aulas</button>
             <button class="tab-btn" data-tab="tab-gestao">Gestão</button>
             <button class="tab-btn" data-tab="tab-estoque">Estoque</button>
             <button class="tab-btn" data-tab="tab-relatorios">Relatórios</button>
+            <button class="tab-btn" data-tab="tab-acompanhamento">Acompanhamento</button>
             <button class="tab-btn" data-tab="tab-admin">Admin</button>
             <button class="tab-btn" data-tab="tab-fila">Fila de espera</button>
             <button class="tab-btn" data-tab="tab-supervisao">Supervisão</button>
@@ -309,9 +311,11 @@
       <section id="tab-chamada" class="tab-page hidden">
         <section class="panel">
           <div class="panel-title-row">
-            <h2>Chamada</h2>
+            <h2>Chamada da Aula</h2>
             <span id="professorNucleusBadge" class="badge">Turma</span>
           </div>
+
+          <p class="muted">Preencha os dados da aula e selecione um horário válido do núcleo antes de registrar a presença.</p>
 
           <div class="grid-form two">
             <label>Data da aula
@@ -322,6 +326,7 @@
               <select id="professorClassSchedule">
                 <option value="">Selecione o horário da aula</option>
               </select>
+              <span id="professorScheduleHint" class="field-help muted"></span>
             </label>
 
             <label>Colaborador responsável
@@ -336,6 +341,8 @@
           <div class="toolbar">
             <button id="professorClassSave" class="primary" type="button">Salvar dados da aula</button>
             <button id="endClassBtn" class="warn" type="button">Encerrar aula</button>
+            <button id="teacherWhatsappBtn" type="button" class="ghost">Abrir WhatsApp (grupo)</button>
+            <button id="teacherWhatsappCopy" type="button" class="ghost">Copiar texto da chamada</button>
             <span id="classLockBadge" class="badge danger hidden">Aula encerrada</span>
           </div>
 
@@ -365,29 +372,42 @@
       <section id="tab-professor" class="tab-page hidden">
         <section class="panel">
           <div class="panel-title-row">
-            <h2>Ferramentas do Colaborador</h2>
+            <h2>Registros Operacionais</h2>
+            <span class="badge">Faltas e anexos</span>
           </div>
+
+          <p class="muted">Selecione o tipo de registro para exibir apenas os campos necessários para o atendimento interno.</p>
 
           <div class="grid-form two">
             <label id="teacherAbsStudentWrap">Aluno
               <select id="teacherAbsStudent"></select>
             </label>
 
+            <label id="teacherAbsCollaboratorWrap" class="hidden">Nome do colaborador
+              <input id="teacherAbsCollaboratorName" type="text" placeholder="Digite o nome do colaborador" />
+            </label>
+
             <label>Tipo de registro
               <select id="teacherAbsType">
                 <option value="atestado_aluno">Atestado do aluno</option>
-                <option value="atestado_colaborador">Atestado / justificativa do colaborador</option>
+                <option value="atestado_colaborador">Atestado do colaborador</option>
                 <option value="justificativa_informal">Justificativa informal</option>
                 <option value="imagem_responsavel">Foto / imagem enviada pelo responsável</option>
                 <option value="observacao_interna">Observação interna</option>
               </select>
             </label>
 
-            <label>Justificativa / observação
-              <textarea id="teacherAbsText" rows="3" placeholder="Descreva a justificativa, observação ou contexto do arquivo"></textarea>
+            <p id="teacherAbsHint" class="muted" style="grid-column:1/-1;">
+              Selecione o tipo de registro para exibir apenas os campos necessários.
+            </p>
+
+            <label id="teacherAbsTextWrap">Texto do registro
+              <span id="teacherAbsTextLabel" class="field-help">Descreva o contexto do registro.</span>
+              <textarea id="teacherAbsText" rows="4" placeholder="Escreva o registro"></textarea>
             </label>
 
-            <label>Imagem / arquivo / anexo
+            <label id="teacherAbsFileWrap">Anexo
+              <span id="teacherAbsFileLabel" class="field-help">Envie imagem ou PDF quando necessário.</span>
               <input id="teacherAbsFile" type="file" accept=".pdf,image/*" />
             </label>
 
@@ -397,6 +417,7 @@
 
             <p id="teacherAbsStatus" class="report-status" style="grid-column:1/-1;"></p>
 
+            <div id="teacherMestreTools" style="grid-column:1/-1;" class="grid-form two">
             <label>Tema Momento do Mestre
               <select id="teacherMestreTheme">
                 <option value="disciplina">Disciplina</option>
@@ -417,15 +438,16 @@
             <div class="toolbar compact">
               <button id="teacherMestreOpen" type="button" class="ghost">Abrir PDF</button>
             </div>
+            </div>
 
             <div class="toolbar compact">
-              <button id="teacherWhatsappBtn" type="button" class="primary">Abrir WhatsApp (grupo)</button>
-              <button id="teacherWhatsappCopy" type="button" class="ghost">Copiar texto da chamada</button>
+              <button type="button" class="primary hidden" aria-hidden="true">Abrir WhatsApp (grupo)</button>
+              <button type="button" class="ghost hidden" aria-hidden="true">Copiar texto da chamada</button>
             </div>
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" id="teacherAbsHistoryPanel">
           <div class="panel-title-row">
             <h2>Histórico de justificativas e atestados</h2>
           </div>
@@ -433,7 +455,7 @@
           <ul id="teacherAbsHistory" class="history-list"></ul>
         </section>
 
-        <section class="panel">
+        <section class="panel" id="planningPanel">
           <div class="panel-title-row">
             <h2>Planejamento semanal</h2>
           </div>
@@ -461,7 +483,7 @@
           <ul id="planningList" class="history-list"></ul>
         </section>
 
-        <section class="panel">
+        <section class="panel" id="professorHistoryPanel">
           <div class="panel-title-row">
             <h2>Histórico da turma</h2>
           </div>
@@ -472,6 +494,11 @@
 
           <ul id="professorHistory" class="history-list"></ul>
         </section>
+      </section>
+
+      <!-- MOMENTO DO MESTRE -->
+      <section id="tab-mestre" class="tab-page hidden">
+        <div id="teacherMestreTabContent"></div>
       </section>
 
       <!-- AULAS -->
@@ -606,49 +633,88 @@
             </form>
           </section>
 
-          <section class="panel">
-            <div class="panel-title-row">
-              <h2>Calendário de aulas por núcleo</h2>
+          <section class="panel collapsible-panel" id="scheduleConfigPanel">
+            <button type="button" class="panel-collapse-toggle" id="scheduleConfigToggle" aria-expanded="false" aria-controls="scheduleConfigContent">
+              <div class="panel-collapse-head">
+                <h2>Configuração de turmas e horários</h2>
+                <span class="panel-collapse-sub">Horários padrão por núcleo, datas de aula e exceções pontuais</span>
+              </div>
+
+              <span class="panel-collapse-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+
+            <div id="scheduleConfigContent" class="panel-collapse-content">
+              <div class="grid-form three">
+                <label>Núcleo
+                  <select id="scheduleConfigNucleus"></select>
+                </label>
+
+                <label>Registrar data de aula
+                  <input id="scheduleDayDate" type="date" />
+                </label>
+
+                <div class="toolbar compact align-end">
+                  <button id="scheduleRegisterDayBtn" type="button" class="ghost">Registrar data</button>
+                </div>
+              </div>
+
+              <p class="muted">Use uma linha por horário no formato <strong>09:00 às 10:00</strong>. Ao trocar a data da chamada, o colaborador verá apenas os horários compatíveis com o dia e com a exceção salva.</p>
+
+              <div class="schedule-week-grid">
+                <label>Segunda
+                  <textarea id="scheduleDaySegunda" rows="4" placeholder="09:00 às 10:00&#10;15:00 às 16:00"></textarea>
+                </label>
+                <label>Terça
+                  <textarea id="scheduleDayTerça" rows="4" placeholder="09:00 às 10:00&#10;15:00 às 16:00"></textarea>
+                </label>
+                <label>Quarta
+                  <textarea id="scheduleDayQuarta" rows="4" placeholder="09:00 às 10:00&#10;15:00 às 16:00"></textarea>
+                </label>
+                <label>Quinta
+                  <textarea id="scheduleDayQuinta" rows="4" placeholder="09:00 às 10:00&#10;15:00 às 16:00"></textarea>
+                </label>
+                <label>Sexta
+                  <textarea id="scheduleDaySexta" rows="4" placeholder="09:00 às 10:00&#10;15:00 às 16:00"></textarea>
+                </label>
+                <label>Sábado
+                  <textarea id="scheduleDaySábado" rows="4" placeholder="09:00 às 10:00&#10;15:00 às 16:00"></textarea>
+                </label>
+              </div>
+
+              <div class="toolbar">
+                <button id="scheduleResetDefaultsBtn" type="button" class="ghost">Recarregar padrão</button>
+                <button id="scheduleSaveStandardBtn" type="button" class="primary">Salvar horários padrão</button>
+              </div>
+
+              <div class="panel-lite schedule-exception-box">
+                <div class="panel-title-row">
+                  <h3>Exceção por data</h3>
+                  <span class="badge">Pontual</span>
+                </div>
+
+                <div class="grid-form two">
+                  <label>Data da exceção
+                    <input id="scheduleExceptionDate" type="date" />
+                  </label>
+
+                  <label>Horários da exceção
+                    <textarea id="scheduleExceptionText" rows="4" placeholder="Uma linha por horário"></textarea>
+                  </label>
+                </div>
+
+                <div class="toolbar">
+                  <button id="scheduleSaveExceptionBtn" type="button" class="primary">Salvar exceção</button>
+                  <button id="scheduleRemoveExceptionBtn" type="button" class="ghost">Remover exceção</button>
+                </div>
+              </div>
+
+              <p id="scheduleConfigStatus" class="report-status"></p>
+              <div id="classCalendarBoard" class="cards-grid"></div>
             </div>
-
-            <form id="classCalendarForm" class="grid-form three">
-              <label>Núcleo
-                <select id="calendarNucleus"></select>
-              </label>
-              <label>Data da aula
-                <input id="calendarDate" type="date" />
-              </label>
-
-              <div></div>
-
-              <label>Horário 1 início <input id="calendarStartTime1" type="time" /></label>
-              <label>Horário 1 fim <input id="calendarEndTime1" type="time" /></label>
-              <div></div>
-
-              <label>Horário 2 início <input id="calendarStartTime2" type="time" /></label>
-              <label>Horário 2 fim <input id="calendarEndTime2" type="time" /></label>
-              <div></div>
-
-              <label>Horário 3 início <input id="calendarStartTime3" type="time" /></label>
-              <label>Horário 3 fim <input id="calendarEndTime3" type="time" /></label>
-              <div></div>
-
-              <label>Horário 4 início <input id="calendarStartTime4" type="time" /></label>
-              <label>Horário 4 fim <input id="calendarEndTime4" type="time" /></label>
-              <div></div>
-
-              <label>Horário 5 início <input id="calendarStartTime5" type="time" /></label>
-              <label>Horário 5 fim <input id="calendarEndTime5" type="time" /></label>
-              <div></div>
-
-              <label>Horário 6 início <input id="calendarStartTime6" type="time" /></label>
-              <label>Horário 6 fim <input id="calendarEndTime6" type="time" /></label>
-              <div></div>
-
-              <button type="submit" class="primary">Salvar calendário</button>
-            </form>
-
-            <div id="classCalendarBoard" class="cards-grid"></div>
           </section>
 
           <section class="panel">
@@ -916,6 +982,112 @@
           </div>
 
           <div id="attendanceReportBoard" class="cards-grid"></div>
+        </section>
+      </section>
+
+      <!-- ACOMPANHAMENTO -->
+      <section id="tab-acompanhamento" class="tab-page hidden">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Histórico de Acompanhamento</h2>
+            <span id="acompanhamentoCountBadge" class="badge">0 registros</span>
+          </div>
+
+          <p class="muted">Consolida registros operacionais do colaborador, tempo de aula EAD e checklist da supervisão.</p>
+
+          <div class="grid-form three">
+            <label>Tipo de registro
+              <select id="acompanhamentoTypeFilter">
+                <option value="todos">Todos</option>
+                <option value="atestado_aluno">Atestado do aluno</option>
+                <option value="justificativa_informal">Justificativa informal</option>
+                <option value="imagem_responsavel">Foto / imagem enviada pelo responsável</option>
+                <option value="observacao_interna">Observação interna</option>
+                <option value="atestado_colaborador">Atestado do colaborador</option>
+                <option value="ead_tempo">Tempo de aula EAD</option>
+                <option value="supervisao_checklist">Checklist de metodologia</option>
+              </select>
+            </label>
+
+            <label>Núcleo
+              <select id="acompanhamentoNucleusFilter"></select>
+            </label>
+
+            <label>Aluno
+              <select id="acompanhamentoStudentFilter">
+                <option value="todos">Todos</option>
+              </select>
+            </label>
+
+            <label>Colaborador
+              <select id="acompanhamentoCollaboratorFilter">
+                <option value="todos">Todos</option>
+              </select>
+            </label>
+
+            <label>Data inicial
+              <input id="acompanhamentoDateStart" type="date" />
+            </label>
+
+            <label>Data final
+              <input id="acompanhamentoDateEnd" type="date" />
+            </label>
+          </div>
+
+          <div class="toolbar">
+            <button id="acompanhamentoPrintBtn" type="button" class="ghost">Imprimir</button>
+            <button id="acompanhamentoClearBtn" type="button" class="ghost">Limpar filtros</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div id="acompanhamentoBoard" class="history-stack"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Tempo de Aula EAD</h2>
+            <span class="badge">Admin / Gestão</span>
+          </div>
+
+          <form id="eadWatchForm" class="grid-form three">
+            <label>Colaborador
+              <select id="eadWatchCollaborator">
+                <option value="">Selecione</option>
+              </select>
+            </label>
+
+            <label>Núcleo
+              <select id="eadWatchNucleus"></select>
+            </label>
+
+            <label>Data
+              <input id="eadWatchDate" type="date" />
+            </label>
+
+            <label>Minutos assistidos
+              <input id="eadWatchMinutes" type="number" min="1" step="1" placeholder="Ex: 45" />
+            </label>
+
+            <label>Modalidade
+              <select id="eadWatchCategory">
+                <option value="">Selecione</option>
+                <option value="Boxe">Boxe</option>
+                <option value="Muay Thai">Muay Thai</option>
+                <option value="Jiu Jitso">Jiu Jitso</option>
+              </select>
+            </label>
+
+            <label>Observação
+              <input id="eadWatchNotes" type="text" placeholder="Observação opcional" />
+            </label>
+
+            <div class="toolbar" style="grid-column:1/-1;">
+              <button type="submit" class="primary">Salvar tempo EAD</button>
+            </div>
+          </form>
+
+          <p id="eadWatchStatus" class="report-status"></p>
         </section>
       </section>
 

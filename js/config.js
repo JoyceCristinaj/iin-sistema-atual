@@ -261,6 +261,8 @@ const MESTRE_THEMES = [
   "leitura_letramento",
 ];
 
+const SCHEDULE_WEEKDAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
 const CUSTOM_FIELDS = [
   { key: "cpf", label: "CPF do aluno" },
   { key: "birthDate", label: "Data nascimento" },
