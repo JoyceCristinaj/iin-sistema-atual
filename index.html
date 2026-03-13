@@ -1319,26 +1319,30 @@
             <span class="badge">Inscrições Online</span>
           </div>
 
-          <div class="panel-grid four" style="margin-top:10px">
-            <article class="metric-card">
-              <p>📊 Inscrições (mês)</p>
+          <div class="panel-grid four fila-metrics-grid" style="margin-top:10px">
+            <article class="metric-card fila-metric-card" data-variant="mes">
+              <p class="fila-metric-kicker">Inscrições do mês</p>
               <h3 id="totalMes">0</h3>
+              <span class="fila-metric-note">Entradas registradas no mês atual</span>
             </article>
-            <article class="metric-card">
-              <p>🟢 Confirmadas</p>
+            <article class="metric-card fila-metric-card" data-variant="confirmadas">
+              <p class="fila-metric-kicker">Confirmadas</p>
               <h3 id="confirmadas">0</h3>
+              <span class="fila-metric-note">Interessados com confirmação registrada</span>
             </article>
-            <article class="metric-card">
-              <p>🟡 Aguardando</p>
+            <article class="metric-card fila-metric-card" data-variant="aguardando">
+              <p class="fila-metric-kicker">Aguardando</p>
               <h3 id="aguardando">0</h3>
+              <span class="fila-metric-note">Inscrições em acompanhamento</span>
             </article>
-            <article class="metric-card">
-              <p>🔴 Sem resposta</p>
+            <article class="metric-card fila-metric-card" data-variant="sem-resposta">
+              <p class="fila-metric-kicker">Sem resposta</p>
               <h3 id="semResposta">0</h3>
+              <span class="fila-metric-note">Sem retorno do responsável até agora</span>
             </article>
           </div>
 
-          <div class="toolbar" style="margin-top:12px; gap:10px; flex-wrap:wrap">
+          <div class="toolbar fila-toolbar" style="margin-top:12px; gap:10px; flex-wrap:wrap">
             <button type="button" class="ghost" id="btnAtualizarFila">Atualizar</button>
 
             <input id="filaBusca" type="text" placeholder="Buscar (nome/whatsapp/núcleo)" style="max-width:260px" />
@@ -1362,8 +1366,8 @@
             <span id="filaStatus" class="report-status muted"></span>
           </div>
 
-          <div class="table-wrapper" style="margin-top:12px">
-            <table>
+          <div class="table-wrapper fila-table-wrap" style="margin-top:12px">
+            <table class="fila-table">
               <thead>
                 <tr>
                   <th>Data</th>
