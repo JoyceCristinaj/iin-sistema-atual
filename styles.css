@@ -3050,8 +3050,9 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
 
 #tab-estoque .snack-actions-grid {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
   gap: 12px !important;
+  align-items: start !important;
 }
 
 #tab-estoque .snack-action-block {
@@ -3061,6 +3062,8 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
   border-radius: 16px !important;
   border: 1px solid #e0e7f0 !important;
   background: linear-gradient(180deg, #fbfcfe 0%, #f5f8fb 100%) !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 
 #tab-estoque .snack-action-head {
@@ -3075,10 +3078,25 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
   color: #15263c !important;
 }
 
+#tab-estoque .snack-quick {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+#tab-estoque .snack-quick button {
+  flex: 1 1 122px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
 #tab-estoque .snack-manual-row {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
-  gap: 8px !important;
+  gap: 10px !important;
+  align-items: stretch !important;
+  min-width: 0 !important;
 }
 
 #tab-estoque .snack-manual-row input,
@@ -3089,6 +3107,32 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
   background: #ffffff !important;
   padding: 0 12px !important;
   font-size: 0.88rem !important;
+}
+
+#tab-estoque .snack-manual-row input[type="number"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  padding: 0 14px !important;
+  font-size: 0.98rem !important;
+  font-weight: 700 !important;
+}
+
+#tab-estoque .snack-manual-row input[type="number"]::-webkit-outer-spin-button,
+#tab-estoque .snack-manual-row input[type="number"]::-webkit-inner-spin-button {
+  opacity: 1;
+}
+
+#tab-estoque .snack-manual-row .apply {
+  width: 100% !important;
+  min-width: 120px !important;
+  max-width: 100% !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  padding: 0 18px !important;
+  justify-self: start !important;
 }
 
 #tab-estoque .snack-note-field {
@@ -3153,6 +3197,12 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
   }
 }
 
+@media (max-width: 1100px) {
+  #tab-estoque .snack-actions-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 @media (max-width: 700px) {
   .student-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3171,5 +3221,10 @@ body:not([data-active-tab="tab-admin"]) section.panel:has(#adminMestreTheme) {
 
   #tab-estoque .snack-manual-row {
     grid-template-columns: 1fr !important;
+  }
+
+  #tab-estoque .snack-manual-row .apply {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
