@@ -22,17 +22,16 @@
   --ead-border-strong: rgba(255, 255, 255, 0.14);
   --ead-radius: 18px;
   --ead-radius-lg: 24px;
-  --ead-shadow-soft: 0 18px 42px rgba(0, 0, 0, 0.28);
-  --ead-shadow-glow: 0 0 30px rgba(139, 26, 26, 0.22);
+  --ead-shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.24);
+  --ead-shadow-glow: 0 18px 36px rgba(0, 0, 0, 0.26);
+  --ead-surface-card: linear-gradient(180deg, rgba(26, 26, 26, 0.98), rgba(18, 18, 18, 0.98));
+  --ead-surface-hero: linear-gradient(180deg, #181818 0%, #121212 100%);
 
   color: var(--ead-text);
   font-family: "Inter", sans-serif;
   padding: 16px;
   border-radius: 24px;
-  background:
-    radial-gradient(circle at top left, rgba(139, 26, 26, 0.14), transparent 22%),
-    radial-gradient(circle at top right, rgba(163, 41, 41, 0.08), transparent 24%),
-    linear-gradient(180deg, #111111 0%, #171717 45%, #121212 100%);
+  background: linear-gradient(180deg, #111111 0%, #171717 45%, #121212 100%);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -122,7 +121,7 @@
   position: relative;
   overflow: hidden;
   padding: 4rem 0 3rem;
-  background: linear-gradient(135deg, var(--ead-bg) 0%, #1a0a0a 100%);
+  background: var(--ead-surface-hero);
   border-radius: 28px;
   border: 1px solid var(--ead-border);
   box-shadow: var(--ead-shadow-soft);
@@ -209,7 +208,7 @@
   padding: 15px 18px;
   border-radius: 18px;
   border: 1px solid var(--ead-border);
-  background: linear-gradient(180deg, rgba(26,26,26,0.98), rgba(18,18,18,0.98));
+  background: var(--ead-surface-card);
   box-shadow: var(--ead-shadow-soft);
 }
 
@@ -246,7 +245,7 @@
   text-align: left;
   border-radius: 22px;
   border: 1px solid var(--ead-border);
-  background: linear-gradient(180deg, rgba(26,26,26,0.98), rgba(18,18,18,0.98));
+  background: var(--ead-surface-card);
   box-shadow: var(--ead-shadow-soft);
   overflow: hidden;
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
@@ -254,14 +253,14 @@
 
 .ead-root .course-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(163, 41, 41, 0.4);
+  border-color: var(--ead-border-strong);
   box-shadow: var(--ead-shadow-glow);
 }
 
 .ead-root .card-thumb {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: linear-gradient(135deg, #161616 0%, #210f12 48%, #121212 100%);
+  background: linear-gradient(135deg, #181818 0%, #151515 48%, #121212 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,7 +397,7 @@
   padding: 20px;
   border-radius: 22px;
   border: 1px solid var(--ead-border);
-  background: linear-gradient(180deg, rgba(26,26,26,0.98), rgba(18,18,18,0.98));
+  background: var(--ead-surface-card);
   color: var(--ead-text-soft);
   line-height: 1.7;
   box-shadow: var(--ead-shadow-soft);
@@ -481,7 +480,7 @@
 .ead-root .sidebar-inner,
 .ead-root .detail-card {
   border: 1px solid var(--ead-border);
-  background: linear-gradient(180deg, rgba(26,26,26,0.98), rgba(18,18,18,0.98));
+  background: var(--ead-surface-card);
   box-shadow: var(--ead-shadow-soft);
 }
 
@@ -677,7 +676,7 @@
 
 .ead-root .ead-detail-tab-btn.active {
   color: #ffffff;
-  border-bottom-color: var(--ead-primary-light);
+  border-bottom-color: var(--ead-border-strong);
 }
 
 .ead-root .ead-detail-tab-panel {
@@ -690,7 +689,7 @@
 
 .ead-root .ead-detail-box {
   padding: 16px 18px;
-  border-top: 2px solid var(--ead-primary-light);
+  border-top: 1px solid var(--ead-border-strong);
   background: #f5f5f5;
   color: #141821;
   line-height: 1.75;
